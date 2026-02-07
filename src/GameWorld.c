@@ -203,16 +203,20 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 void drawGameWorld( GameWorld *gw ) {
 
     BeginDrawing();
-    ClearBackground( BLACK );
+    ClearBackground( DARKBLUE );
 
     float space = gw->boundarie.width / 8;
     int tableMargin = 40;
 
-    DrawRectangle( 
-        gw->boundarie.x - tableMargin,
-        gw->boundarie.y - tableMargin,
-        gw->boundarie.width + tableMargin * 2,
-        gw->boundarie.height + tableMargin * 2,
+    DrawRectangleRounded( 
+        (Rectangle) {
+            gw->boundarie.x - tableMargin,
+            gw->boundarie.y - tableMargin,
+            gw->boundarie.width + tableMargin * 2,
+            gw->boundarie.height + tableMargin * 2
+        },
+        0.1f,
+        10,
         BROWN
     );
 
