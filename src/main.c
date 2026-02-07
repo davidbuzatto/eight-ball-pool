@@ -15,8 +15,8 @@
 int main( void ) {
 
     GameWindow *gameWindow = createGameWindow(
-        800,             // width
-        450,             // height
+        900,             // width
+        550,             // height
         "8 Ball Pool",   // title
         60,              // target FPS
         true,            // antialiasing

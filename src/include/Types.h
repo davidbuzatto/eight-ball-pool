@@ -26,6 +26,8 @@ typedef struct CueStick {
     float size;
     float angle;
     int impulse;
+    int minImpulse;
+    int maxImpulse;
 } CueStick;
 
 typedef struct GameWorld {

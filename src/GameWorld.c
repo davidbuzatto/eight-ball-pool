@@ -25,34 +25,23 @@
 
 #define BALL_COUNT 15
 #define BALL_RADIUS 10
-#define BALL_FRICTION 0.99f
+#define BALL_FRICTION 59.4
 #define BALL_ELASTICITY 0.9f
-#define CUE_BALL_BASE_IMPULSE 1000
+#define SHUFFLE_BALLS true
 
 static void resolveCollisionBallBall( Ball *b1, Ball *b2 );
+static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size );
+static void prepareBallData( Color *colors, bool *striped, int *numbers, bool shuffleBalls );
 
-void setupGameWorld( GameWorld *gw ) {
+static void setupGameWorld( GameWorld *gw ) {
 
-    int margin = 50;
-    Color color[] = { 
-        (Color) { .r = 255, .g = 215, .b = 0, .a = 255 }, // yellow
-        (Color) { .r = 0, .g = 100, .b = 200, .a = 255 }, // blue
-        (Color) { .r = 220, .g = 20, .b = 60, .a = 255 }, // red
-        (Color) { .r = 75, .g = 0, .b = 130, .a = 255 },  // purple
-        BLACK,                                            // black
-        (Color) { .r = 255, .g = 100, .b = 0, .a = 255 }, // orange
-        (Color) { .r = 0, .g = 128, .b = 0, .a = 255 },   // green
-        (Color) { .r = 139, .g = 69, .b = 19, .a = 255 }, // brown
-        (Color) { .r = 255, .g = 215, .b = 0, .a = 255 }, // yellow
-        (Color) { .r = 0, .g = 100, .b = 200, .a = 255 }, // blue
-        (Color) { .r = 220, .g = 20, .b = 60, .a = 255 }, // red
-        (Color) { .r = 75, .g = 0, .b = 130, .a = 255 },  // purple
-        (Color) { .r = 255, .g = 100, .b = 0, .a = 255 }, // orange
-        (Color) { .r = 0, .g = 128, .b = 0, .a = 255 },   // green
-        (Color) { .r = 139, .g = 69, .b = 19, .a = 255 }  // brown
-    };
-    bool striped[] = { false, false, false, false, false, false, false, false, true, true, true, true, true, true, true };
-    int numbers[] = { 1, 2, 3, 4, 8, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15 };
+    int margin = 100;
+
+    Color colors[15];
+    bool striped[15];
+    int numbers[15];
+
+    prepareBallData( colors, striped, numbers, SHUFFLE_BALLS );
 
     gw->boundarie = (Rectangle) {
         margin,
@@ -64,7 +53,7 @@ void setupGameWorld( GameWorld *gw ) {
     // cue ball
     gw->cueBall = &gw->balls[0];
     gw->balls[0] = (Ball) {
-        .center = { GetScreenWidth() / 2 - 200, GetScreenHeight() / 2 },
+        .center = { gw->boundarie.x + gw->boundarie.width / 4, GetScreenHeight() / 2 },
         .radius = BALL_RADIUS,
         .vel = { 0, 0 },
         .friction = BALL_FRICTION,
@@ -81,7 +70,7 @@ void setupGameWorld( GameWorld *gw ) {
         for ( int j = 0; j <= i; j++ ) {
             gw->balls[k] = (Ball) {
                 .center = { 
-                    GetScreenWidth() / 2 + 150 + ( BALL_RADIUS * 2 ) * i - 2.5f * i, 
+                    gw->boundarie.x + gw->boundarie.width - gw->boundarie.width / 4 + ( BALL_RADIUS * 2 ) * i - 2.5f * i, 
                     iniY + ( BALL_RADIUS * 2 ) * j + 0.5f * j
                 },
                 .prevPos = { 0 },
@@ -89,7 +78,7 @@ void setupGameWorld( GameWorld *gw ) {
                 .vel = { 0, 0 },
                 .friction = BALL_FRICTION,
                 .elasticity = BALL_ELASTICITY,
-                .color = color[k-1],
+                .color = colors[k-1],
                 .striped = striped[k-1],
                 .number = numbers[k-1]
             };
@@ -100,10 +89,12 @@ void setupGameWorld( GameWorld *gw ) {
     
     gw->cueStick = (CueStick) {
         .target = gw->cueBall->center,
-        .distanceFromTarget = 20,
+        .distanceFromTarget = BALL_RADIUS,
         .size = 200,
         .angle = 0,
-        .impulse = 100
+        .impulse = 100,
+        .minImpulse = 100,
+        .maxImpulse = 1400
     };
 
     gw->state = GAME_STATE_BALLS_STOPPED;
@@ -137,9 +128,15 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
     if ( gw->state == GAME_STATE_BALLS_STOPPED ) {
 
-        if ( IsKeyPressed( KEY_SPACE ) ) {
+        /*if ( IsKeyPressed( KEY_SPACE ) ) {
             gw->cueBall->vel.x = gw->cueStick.impulse * cosf( DEG2RAD * gw->cueStick.angle );
             gw->cueBall->vel.y = gw->cueStick.impulse * sinf( DEG2RAD * gw->cueStick.angle );
+        }*/
+
+        if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
+            gw->cueBall->vel.x = gw->cueStick.impulse * cosf( DEG2RAD * gw->cueStick.angle );
+            gw->cueBall->vel.y = gw->cueStick.impulse * sinf( DEG2RAD * gw->cueStick.angle );
+            gw->cueStick.impulse = gw->cueStick.minImpulse;
         }
 
         updateCueStick( &gw->cueStick, delta );
@@ -208,7 +205,105 @@ void drawGameWorld( GameWorld *gw ) {
     BeginDrawing();
     ClearBackground( BLACK );
 
+    float space = gw->boundarie.width / 8;
+    int tableMargin = 40;
+
+    DrawRectangle( 
+        gw->boundarie.x - tableMargin,
+        gw->boundarie.y - tableMargin,
+        gw->boundarie.width + tableMargin * 2,
+        gw->boundarie.height + tableMargin * 2,
+        BROWN
+    );
+
+    DrawRectangle( 
+        gw->boundarie.x - tableMargin / 3,
+        gw->boundarie.y - tableMargin / 3,
+        gw->boundarie.width + tableMargin / 3 * 2,
+        gw->boundarie.height + tableMargin / 3 * 2,
+        GREEN
+    );
+
+    for ( int i = 1; i <= 7; i++ ) {
+        if ( i != 4 ) {
+            DrawCircle( 
+                gw->boundarie.x + space * i, 
+                gw->boundarie.y - tableMargin / 3 * 2, 
+                3, WHITE
+            );
+            DrawCircle( 
+                gw->boundarie.x + space * i, 
+                gw->boundarie.y + gw->boundarie.height + tableMargin / 3 * 2,
+                3, WHITE
+            );
+        }
+    }
+
+    for ( int i = 1; i <= 3; i++ ) {
+        DrawCircle( 
+            gw->boundarie.x - tableMargin / 3 * 2, 
+            gw->boundarie.y + space * i, 
+            3, WHITE
+        );
+        DrawCircle( 
+            gw->boundarie.x + gw->boundarie.width + tableMargin / 3 * 2, 
+            gw->boundarie.y + space * i, 
+            3, WHITE
+        );
+    }
+
+    // pockets
+    DrawCircle( 
+        gw->boundarie.x - tableMargin / 2 + 6, 
+        gw->boundarie.y - tableMargin / 2 + 6, 
+        tableMargin / 2, 
+        BLACK
+    );
+
+    DrawCircle( 
+        gw->boundarie.x + gw->boundarie.width / 2, 
+        gw->boundarie.y - tableMargin / 2 + 3, 
+        tableMargin / 2.5, 
+        BLACK
+    );
+
+    DrawCircle( 
+        gw->boundarie.x + gw->boundarie.width + tableMargin / 2 - 6, 
+        gw->boundarie.y - tableMargin / 2 + 6, 
+        tableMargin / 2, 
+        BLACK
+    );
+
+    DrawCircle( 
+        gw->boundarie.x - tableMargin / 2 + 6, 
+        gw->boundarie.y + gw->boundarie.height + tableMargin / 2 - 6, 
+        tableMargin / 2, 
+        BLACK
+    );
+
+    DrawCircle( 
+        gw->boundarie.x + gw->boundarie.width / 2, 
+        gw->boundarie.y + gw->boundarie.height + tableMargin / 2 - 3, 
+        tableMargin / 2.5, 
+        BLACK
+    );
+
+    DrawCircle( 
+        gw->boundarie.x + gw->boundarie.width + tableMargin / 2 - 6, 
+        gw->boundarie.y + gw->boundarie.height + tableMargin / 2 - 6, 
+        tableMargin / 2, 
+        BLACK
+    );
+
     DrawRectangleRec( gw->boundarie, DARKGREEN );
+
+    DrawLine( 
+        gw->boundarie.x + space * 2, 
+        gw->boundarie.y,
+        gw->boundarie.x + space * 2, 
+        gw->boundarie.y + gw->boundarie.height,
+        WHITE
+    );
 
     for ( int i = 0; i <= BALL_COUNT; i++ ) {
         drawBall( &gw->balls[i] );
@@ -234,7 +329,7 @@ static void resolveCollisionBallBall( Ball *b1, Ball *b2 ) {
     float minDistance = b1->radius + b2->radius;
 
     // the balls are not colliding
-    if (distance >= minDistance) {
+    if ( distance >= minDistance ) {
         return;
     }
 
@@ -272,5 +367,84 @@ static void resolveCollisionBallBall( Ball *b1, Ball *b2 ) {
     b1->vel.y -= dotProduct * norm.y;
     b2->vel.x += dotProduct * norm.x;
     b2->vel.y += dotProduct * norm.y;
+
+}
+
+static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size ) {
+    for ( int i = 0; i < size; i++ ) {
+        int p = GetRandomValue( 0, size - 1 );
+        Color c = colors[i];
+        colors[i] = colors[p];
+        colors[p] = c;
+        int n = numbers[i];
+        numbers[i] = numbers[p];
+        numbers[p] = n;
+    }
+}
+
+static void prepareBallData( Color *colors, bool *striped, int *numbers, bool shuffleBalls ) {
+
+    Color solidColors[] = {
+        (Color) { .r = 255, .g = 215, .b = 0, .a = 255 }, // yellow
+        (Color) { .r = 0, .g = 100, .b = 200, .a = 255 }, // blue
+        (Color) { .r = 220, .g = 20, .b = 60, .a = 255 }, // red
+        (Color) { .r = 75, .g = 0, .b = 130, .a = 255 },  // purple
+        (Color) { .r = 255, .g = 100, .b = 0, .a = 255 }, // orange
+        (Color) { .r = 0, .g = 128, .b = 0, .a = 255 },   // green
+        (Color) { .r = 139, .g = 69, .b = 19, .a = 255 }, // brown
+    };
+    int solidNumbers[] = { 1, 2, 3, 4, 5, 6, 7 };
+
+    Color stripeColors[] = {
+        (Color) { .r = 255, .g = 215, .b = 0, .a = 255 }, // yellow
+        (Color) { .r = 0, .g = 100, .b = 200, .a = 255 }, // blue
+        (Color) { .r = 220, .g = 20, .b = 60, .a = 255 }, // red
+        (Color) { .r = 75, .g = 0, .b = 130, .a = 255 },  // purple
+        (Color) { .r = 255, .g = 100, .b = 0, .a = 255 }, // orange
+        (Color) { .r = 0, .g = 128, .b = 0, .a = 255 },   // green
+        (Color) { .r = 139, .g = 69, .b = 19, .a = 255 }, // brown
+    };
+    int stripeNumbers[] = { 9, 10, 11, 12, 13, 14, 15 };
+
+    if ( shuffleBalls ) {
+        shuffleColorsAndNumbers( solidColors, solidNumbers, 7 );
+        shuffleColorsAndNumbers( stripeColors, stripeNumbers, 7 );
+    }
+
+    Color colorQueue[12];
+    int numberQueue[12];
+
+    for ( int i = 1; i < 7; i++ ) {
+        colorQueue[i-1] = solidColors[i];
+        colorQueue[i+5] = stripeColors[i];
+        numberQueue[i-1] = solidNumbers[i];
+        numberQueue[i+5] = stripeNumbers[i];
+    }
+
+    if ( shuffleBalls ) {
+        shuffleColorsAndNumbers( colorQueue, numberQueue, 12 );
+    }
+
+    int q = 0;
+    for ( int i = 0; i < 15; i++ ) {
+        if ( i == 4 ) {
+            colors[i] = BLACK;
+            numbers[i] = 8;
+            striped[i] = false;
+        } else if ( i == 10 ) {
+            colors[i] = solidColors[0];
+            numbers[i] = solidNumbers[0];
+            striped[i] = false;
+        } else if ( i == 14 ) {
+            colors[i] = stripeColors[0];
+            numbers[i] = stripeNumbers[0];
+            striped[i] = true;
+        } else {
+            colors[i] = colorQueue[q];
+            numbers[i] = numberQueue[q];
+            striped[i] = numbers[i] > 8;
+            q++;
+        }
+    }
 
 }

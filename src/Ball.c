@@ -6,8 +6,10 @@
 void updateBall( Ball *b, float delta ) {
     b->center.x += b->vel.x * delta;
     b->center.y += b->vel.y * delta;
-    b->vel.x *= b->friction;
-    b->vel.y *= b->friction;
+    b->vel.x *= b->friction * delta;
+    b->vel.y *= b->friction * delta;
+    /*b->vel.x *= b->friction;
+    b->vel.y *= b->friction;*/
     if ( (int) b->vel.x == 0 && (int) b->vel.y == 0 ) {
         b->moving = false;
     } else {

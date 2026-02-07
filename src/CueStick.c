@@ -7,7 +7,7 @@
 
 void updateCueStick( CueStick *cs, float delta ) {
 
-    if ( IsKeyDown( KEY_LEFT_CONTROL ) ) {
+    /*if ( IsKeyDown( KEY_LEFT_CONTROL ) ) {
         if ( IsKeyPressed( KEY_LEFT ) ) {
             cs->angle -= 0.5f;
         } else if ( IsKeyPressed( KEY_RIGHT ) ) {
@@ -27,12 +27,22 @@ void updateCueStick( CueStick *cs, float delta ) {
         } else if ( IsKeyDown( KEY_DOWN ) ) {
             cs->impulse += 50;
         }
+    }*/
+
+    cs->angle = RAD2DEG * atan2f( GetMouseY() - cs->target.y, GetMouseX() - cs->target.x );
+
+    float mouseWheelMove = GetMouseWheelMove();
+    
+    if ( mouseWheelMove < 0.0f ) {
+        cs->impulse += 50;
+    } else if ( mouseWheelMove > 0.0f ) {
+        cs->impulse -= 50;
     }
 
-    if ( cs->impulse < 100 ) {
-        cs->impulse = 100;
-    } else if ( cs->impulse > 1400 ) {
-        cs->impulse = 1400;
+    if ( cs->impulse < cs->minImpulse ) {
+        cs->impulse = cs->minImpulse;
+    } else if ( cs->impulse > cs->maxImpulse ) {
+        cs->impulse = cs->maxImpulse;
     }
 
 }
@@ -45,8 +55,12 @@ void drawCueStick( CueStick *cs ) {
     float wSize = cs->size * c;
     float hSize = cs->size * s;
 
-    float wDist = ( ( cs->impulse / 100.0f ) * 8 + 10 ) * c;
-    float hDist = ( ( cs->impulse / 100.0f ) * 8 + 10 ) * s;
+    float wDist = ( ( ( cs->impulse - cs->minImpulse ) / cs->minImpulse ) * 8 + cs->distanceFromTarget ) * c;
+    float hDist = ( ( ( cs->impulse - cs->minImpulse ) / cs->minImpulse ) * 8 + cs->distanceFromTarget ) * s;
+    /*float wDist = cs->distanceFromTarget * c;
+    float hDist = cs->distanceFromTarget * s;*/
+    /*float wDist = ( ( cs->impulse / 100.0f ) * 8 + 10 ) * c;
+    float hDist = ( ( cs->impulse / 100.0f ) * 8 + 10 ) * s;*/
 
     float wPath = 1000 * c;
     float hPath = 1000 * s;
