@@ -25,7 +25,7 @@
 
 #define BALL_COUNT 15
 #define BALL_RADIUS 10
-#define BALL_FRICTION 59.4
+#define BALL_FRICTION 0.99f
 #define BALL_ELASTICITY 0.9f
 #define SHUFFLE_BALLS true
 
@@ -33,9 +33,15 @@ static void resolveCollisionBallBall( Ball *b1, Ball *b2 );
 static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size );
 static void prepareBallData( Color *colors, bool *striped, int *numbers, bool shuffleBalls );
 
+static CollisionResult circleSegmentCollision( Vector2 circlePos, Vector2 prevPos, float radius, Vector2 segStart, Vector2 segEnd );
+static CollisionResult circlePointSweep( Vector2 prevPos, Vector2 currPos, float radius, Vector2 point );
+static CollisionResult circleQuadCollision( Vector2 circlePos, Vector2 prevPos, float radius, Vector2* quadVertices, int numVertices );
+static CollisionResult circleCushionCollision( Vector2 circlePos, Vector2 prevPos, float radius, Cushion *c );
+
 static void setupGameWorld( GameWorld *gw ) {
 
     int margin = 100;
+    int tableMargin = 40;
 
     Color colors[15];
     bool striped[15];
@@ -50,6 +56,108 @@ static void setupGameWorld( GameWorld *gw ) {
         350
     };
 
+    gw->pockets[0] = (Pocket) {
+        .center = {
+            gw->boundarie.x - tableMargin / 2 + 6, 
+            gw->boundarie.y - tableMargin / 2 + 6
+        },
+        .radius = tableMargin / 2
+    };
+
+    gw->pockets[1] = (Pocket) {
+        .center = {
+            gw->boundarie.x + gw->boundarie.width / 2, 
+            gw->boundarie.y - tableMargin / 2 + 3, 
+        },
+        .radius = tableMargin / 2.5f
+    };
+
+    gw->pockets[2] = (Pocket) {
+        .center = {
+            gw->boundarie.x + gw->boundarie.width + tableMargin / 2 - 6, 
+            gw->boundarie.y - tableMargin / 2 + 6
+        },
+        .radius = tableMargin / 2
+    };
+
+    gw->pockets[3] = (Pocket) {
+        .center = {
+            gw->boundarie.x - tableMargin / 2 + 6, 
+            gw->boundarie.y + gw->boundarie.height + tableMargin / 2 - 6
+        },
+        .radius = tableMargin / 2
+    };
+
+    gw->pockets[4] = (Pocket) {
+        .center = {
+            gw->boundarie.x + gw->boundarie.width / 2, 
+            gw->boundarie.y + gw->boundarie.height + tableMargin / 2 - 3
+        },
+        .radius = tableMargin / 2.5f
+    };
+
+    gw->pockets[5] = (Pocket) {
+        .center = {
+            gw->boundarie.x + gw->boundarie.width + tableMargin / 2 - 6, 
+            gw->boundarie.y + gw->boundarie.height + tableMargin / 2 - 6
+        },
+        .radius = tableMargin / 2
+    };
+
+    gw->cushions[0] = (Cushion) {
+        {
+            { 105, 86 },
+            { 435, 86 },
+            { 430, 100 },
+            { 120, 100 }
+        }
+    };
+
+    gw->cushions[1] = (Cushion) {
+        {
+            { 465, 86 },
+            { 795, 86 },
+            { 780, 100 },
+            { 470, 100 }
+        }
+    };
+
+    gw->cushions[2] = (Cushion) {
+        {
+            { 120, 450 },
+            { 430, 450 },
+            { 435, 464 },
+            { 105, 464 }
+        }
+    };
+
+    gw->cushions[3] = (Cushion) {
+        {
+            { 470, 450 },
+            { 780, 450 },
+            { 795, 464 },
+            { 465, 464 }
+        }
+    };
+
+    gw->cushions[4] = (Cushion) {
+        {
+            { 86, 105 },
+            { 100, 120 },
+            { 100, 430 },
+            { 86, 445 }
+        }
+    };
+
+    gw->cushions[5] = (Cushion) {
+        {
+            { 800, 120 },
+            { 814, 105 },
+            { 814, 445 },
+            { 800, 430 }
+        }
+    };
+
     // cue ball
     gw->cueBall = &gw->balls[0];
     gw->balls[0] = (Ball) {
@@ -60,7 +168,8 @@ static void setupGameWorld( GameWorld *gw ) {
         .elasticity = BALL_ELASTICITY,
         .color = WHITE,
         .striped = false,
-        .number = 0
+        .number = 0,
+        .pocketed = false
     };
     gw->balls[0].prevPos = gw->balls[0].center;
 
@@ -80,7 +189,8 @@ static void setupGameWorld( GameWorld *gw ) {
                 .elasticity = BALL_ELASTICITY,
                 .color = colors[k-1],
                 .striped = striped[k-1],
-                .number = numbers[k-1]
+                .number = numbers[k-1],
+                .pocketed = false
             };
             gw->balls[k].prevPos = gw->balls[k].center;
             k++;
@@ -92,8 +202,8 @@ static void setupGameWorld( GameWorld *gw ) {
         .distanceFromTarget = BALL_RADIUS,
         .size = 200,
         .angle = 0,
-        .impulse = 100,
-        .minImpulse = 100,
+        .impulse = 10,
+        .minImpulse = 10,
         .maxImpulse = 1400
     };
 
@@ -126,12 +236,12 @@ void updateGameWorld( GameWorld *gw, float delta ) {
         setupGameWorld( gw );
     }
 
-    if ( gw->state == GAME_STATE_BALLS_STOPPED ) {
+    // prev positions here (needed for cushion collision)
+    for ( int i = 0; i <= BALL_COUNT; i++ ) {
+        gw->balls[i].prevPos = gw->balls[i].center;
+    }
 
-        /*if ( IsKeyPressed( KEY_SPACE ) ) {
-            gw->cueBall->vel.x = gw->cueStick.impulse * cosf( DEG2RAD * gw->cueStick.angle );
-            gw->cueBall->vel.y = gw->cueStick.impulse * sinf( DEG2RAD * gw->cueStick.angle );
-        }*/
+    if ( gw->state == GAME_STATE_BALLS_STOPPED ) {
 
         if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
             gw->cueBall->vel.x = gw->cueStick.impulse * cosf( DEG2RAD * gw->cueStick.angle );
@@ -148,37 +258,65 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     for ( int i = 0; i <= BALL_COUNT; i++ ) {
 
         Ball *b = &gw->balls[i];
+
+        if ( b->pocketed ) {
+            continue;
+        }
+
         updateBall( b, delta );
 
-        // boundarie collision
-        float left = gw->boundarie.x;
-        float right = gw->boundarie.x + gw->boundarie.width;
-        float top = gw->boundarie.y;
-        float down = gw->boundarie.y + gw->boundarie.height;
+        // cushion collision
+        for ( int j = 0; j < 6; j++ ) {
 
-        if ( b->center.x - b->radius < left ) {
-            b->center.x = left + b->radius;
-            b->vel.x = -b->vel.x * b->elasticity;
-        } else if ( b->center.x + b->radius > right ) {
-            b->center.x = right - b->radius;
-            b->vel.x = -b->vel.x * b->elasticity;
+            Cushion *c = &gw->cushions[j];
+            CollisionResult collision = circleCushionCollision( b->center, b->prevPos, b->radius, c );
+
+            if ( collision.hasCollision ) {
+
+                // puts the ball in the exact point of contact
+                Vector2 movement = Vector2Subtract( b->center, b->prevPos );
+                b->center = Vector2Add( b->prevPos, Vector2Scale( movement, collision.t ) );
+
+                // calculates the reflection of the velocity
+                float dotProduct = Vector2DotProduct( b->vel, collision.normal );
+                b->vel = Vector2Subtract( b->vel, Vector2Scale( collision.normal, 2.0f * dotProduct ) ); 
+
+                // aplies elasticity
+                b->vel = Vector2Scale( b->vel, b->elasticity );
+
+                // apply some offset to prevent continuous collision
+                b->center = Vector2Add( b->center, Vector2Scale( collision.normal, 0.1f ) );
+
+            }
+
         }
 
-        if ( b->center.y - b->radius < top ) {
-            b->center.y = top + b->radius;
-            b->vel.y = -b->vel.y * b->elasticity;
-        } else if ( b->center.y + b->radius > down ) {
-            b->center.y = down - b->radius;
-            b->vel.y = -b->vel.y * b->elasticity;
-        }
-
+        // ball x ball
         for ( int j = 0; j <= BALL_COUNT; j++ ) {
             if ( j != i ) {
                 Ball *bt = &gw->balls[j];
+                if ( bt->pocketed ) {
+                    continue;
+                }
                 if ( CheckCollisionCircles( b->center, b->radius, bt->center, bt->radius ) ) {
                     resolveCollisionBallBall( b, bt );
                 }
             }
+        }
+
+        // ball x pockets
+        for ( int j = 0; j < 6; j++ ) {
+
+            float dist = Vector2Distance( b->center,  gw->pockets[j].center );
+
+            // more than 50% of ball is inside the pocket
+            if ( dist < gw->pockets[j].radius - b->radius * 0.5f ) {
+                b->pocketed = true;
+                b->vel = (Vector2) { 0 };
+                b->moving = false;
+                break;
+            }
+
         }
 
         if ( !ballsMoving && b->moving ) {
@@ -220,12 +358,24 @@ void drawGameWorld( GameWorld *gw ) {
         BROWN
     );
 
+    DrawRectangleRoundedLines( 
+        (Rectangle) {
+            gw->boundarie.x - tableMargin,
+            gw->boundarie.y - tableMargin,
+            gw->boundarie.width + tableMargin * 2,
+            gw->boundarie.height + tableMargin * 2
+        },
+        0.1f,
+        10,
+        BLACK
+    );
+
     DrawRectangle( 
         gw->boundarie.x - tableMargin / 3,
         gw->boundarie.y - tableMargin / 3,
         gw->boundarie.width + tableMargin / 3 * 2,
         gw->boundarie.height + tableMargin / 3 * 2,
-        GREEN
+        DARKGREEN
     );
 
     for ( int i = 1; i <= 7; i++ ) {
@@ -257,49 +407,21 @@ void drawGameWorld( GameWorld *gw ) {
     }
 
     // pockets
-    DrawCircle( 
-        gw->boundarie.x - tableMargin / 2 + 6, 
-        gw->boundarie.y - tableMargin / 2 + 6, 
-        tableMargin / 2, 
-        BLACK
-    );
+    for ( int i = 0; i < 6; i++ ) {
+        DrawCircleV( 
+            gw->pockets[i].center,
+            gw->pockets[i].radius,
+            BLACK
+        );
+    }
 
-    DrawCircle( 
-        gw->boundarie.x + gw->boundarie.width / 2, 
-        gw->boundarie.y - tableMargin / 2 + 3, 
-        tableMargin / 2.5, 
-        BLACK
-    );
-
-    DrawCircle( 
-        gw->boundarie.x + gw->boundarie.width + tableMargin / 2 - 6, 
-        gw->boundarie.y - tableMargin / 2 + 6, 
-        tableMargin / 2, 
-        BLACK
-    );
-
-    DrawCircle( 
-        gw->boundarie.x - tableMargin / 2 + 6, 
-        gw->boundarie.y + gw->boundarie.height + tableMargin / 2 - 6, 
-        tableMargin / 2, 
-        BLACK
-    );
-
-    DrawCircle( 
-        gw->boundarie.x + gw->boundarie.width / 2, 
-        gw->boundarie.y + gw->boundarie.height + tableMargin / 2 - 3, 
-        tableMargin / 2.5, 
-        BLACK
-    );
-
-    DrawCircle( 
-        gw->boundarie.x + gw->boundarie.width + tableMargin / 2 - 6, 
-        gw->boundarie.y + gw->boundarie.height + tableMargin / 2 - 6, 
-        tableMargin / 2, 
-        BLACK
-    );
-
-    DrawRectangleRec( gw->boundarie, DARKGREEN );
+    // cushions
+    for ( int i = 0; i < 6; i++ ) {
+        Cushion *c = &gw->cushions[i];
+        for ( int j = 0; j < 4; j++ ) {
+            DrawLineV( c->vertices[j], c->vertices[(j+1)%4], BLACK );
+        }
+    }
 
     DrawLine( 
         gw->boundarie.x + space * 2, 
@@ -451,4 +573,150 @@ static void prepareBallData( Color *colors, bool *striped, int *numbers, bool sh
         }
     }
 
+}
+
+// Verifica colisão círculo vs segmento de linha
+static CollisionResult circleSegmentCollision( Vector2 circlePos, Vector2 prevPos, float radius, 
+                                               Vector2 segStart, Vector2 segEnd ) {
+    CollisionResult result = { 0 };
+
+    Vector2 movement = Vector2Subtract( circlePos, prevPos );
+
+    // Se não há movimento, não há colisão sweep
+    if ( Vector2Length( movement ) < 0.001f ) {
+        return result;
+    }
+
+    Vector2 segDir = Vector2Subtract( segEnd, segStart );
+    float segLen = Vector2Length( segDir );
+    Vector2 segNorm = Vector2Normalize( segDir );
+
+    // Normal do segmento (perpendicular, aponta para "fora")
+    Vector2 normal = { segNorm.y, -segNorm.x };
+
+    // Distância do centro atual à linha
+    Vector2 toLineCurr = Vector2Subtract( circlePos, segStart );
+    float distCurr = Vector2DotProduct( toLineCurr, normal );
+
+    // Distância do centro anterior à linha
+    Vector2 toLinePrev = Vector2Subtract( prevPos, segStart );
+    float distPrev = Vector2DotProduct( toLinePrev, normal );
+
+    // Verifica se está se aproximando da linha
+    if ( distCurr >= distPrev ) {
+        return result; // Afastando ou paralelo
+    }
+
+    // Verifica se vai colidir neste frame
+    if ( distCurr > radius || distPrev < -radius ) {
+        return result; // Muito longe
+    }
+
+    // Calcula t (quando o círculo toca a linha)
+    float distChange = distCurr - distPrev;
+    float t = ( distPrev - radius ) / -distChange;
+
+    // Clamp t entre 0 e 1
+    if ( t < 0.0f ) t = 0.0f;
+    if ( t > 1.0f ) t = 1.0f;
+
+    // Posição do centro no momento da colisão
+    Vector2 collisionCenter = Vector2Add( prevPos, Vector2Scale( movement, t ) );
+
+    // Projeção no segmento
+    Vector2 toCollision = Vector2Subtract( collisionCenter, segStart );
+    float projection = Vector2DotProduct( toCollision, segNorm );
+
+    // Verifica se está dentro do segmento (com margem)
+    if ( projection >= -0.1f && projection <= segLen + 0.1f ) {
+        result.hasCollision = true;
+        result.t = t;
+        result.point = Vector2Add( collisionCenter, Vector2Scale( normal, -radius ) );
+        result.normal = normal;
+    }
+
+    return result;
+
+}
+
+
+// colisão do círculo em movimento com um ponto (vértice)
+static CollisionResult circlePointSweep( Vector2 prevPos, Vector2 currPos, float radius, Vector2 point ) {
+
+    CollisionResult result = { 0 };
+
+    Vector2 movement = Vector2Subtract( currPos, prevPos );
+    Vector2 toPoint = Vector2Subtract( point, prevPos );
+
+    float a = Vector2DotProduct( movement, movement );
+    float b = -2.0f * Vector2DotProduct( movement, toPoint );
+    float c = Vector2DotProduct( toPoint, toPoint ) - radius * radius;
+
+    float discriminant = b * b - 4 * a * c;
+
+    if ( discriminant < 0 || a == 0 ) {
+        return result;
+    }
+
+    float t = ( -b - sqrtf( discriminant ) ) / ( 2.0f * a );
+
+    if ( t >= 0 && t <= 1 ) {
+
+        Vector2 collisionCenter = Vector2Add( prevPos, Vector2Scale( movement, t ) );
+        Vector2 normal = Vector2Normalize( Vector2Subtract( collisionCenter, point ) );
+
+        result.hasCollision = true;
+        result.t = t;
+        result.point = Vector2Add( point, Vector2Scale( normal, radius ) );
+        result.normal = normal;
+
+    }
+
+    return result;
+
+}
+
+// função principal: círculo vs quadrilátero
+static CollisionResult circleQuadCollision( Vector2 circlePos, Vector2 prevPos, float radius, 
+                                            Vector2* quadVertices, int numVertices ) {
+
+    CollisionResult earliestCollision = { 0 };
+    float minT = INFINITY;
+
+    // verifica cada aresta do quadrilátero
+    for ( int i = 0; i < numVertices; i++ ) {
+
+        Vector2 start = quadVertices[i];
+        Vector2 end = quadVertices[(i + 1) % numVertices];
+
+        CollisionResult collision = circleSegmentCollision( circlePos, prevPos, radius, start, end );
+
+        if ( collision.hasCollision && collision.t < minT ) {
+            minT = collision.t;
+            earliestCollision = collision;
+        }
+
+    }
+
+    // verifica colisão com os vértices
+    if ( !earliestCollision.hasCollision ) {
+        for ( int i = 0; i < numVertices; i++ ) {
+
+            CollisionResult collision = circlePointSweep( prevPos, circlePos, radius, quadVertices[i] );
+
+            if ( collision.hasCollision && collision.t < minT ) {
+                minT = collision.t;
+                earliestCollision = collision;
+            }
+
+        }
+
+    }
+
+    return earliestCollision;
+
+}
+
+static CollisionResult circleCushionCollision( Vector2 circlePos, Vector2 prevPos, float radius, Cushion *c ) {
+    return circleQuadCollision( circlePos, prevPos, radius, c->vertices, 4 );
 }

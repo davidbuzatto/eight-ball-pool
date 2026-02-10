@@ -18,6 +18,7 @@ typedef struct Ball {
     Color color;
     bool striped;
     int number;
+    bool pocketed;
 } Ball;
 
 typedef struct CueStick {
@@ -30,10 +31,28 @@ typedef struct CueStick {
     int maxImpulse;
 } CueStick;
 
+typedef struct Cushion {
+    Vector2 vertices[4];
+} Cushion;
+
+typedef struct Pocket {
+    Vector2 center;
+    int radius;
+} Pocket;
+
 typedef struct GameWorld {
     Rectangle boundarie;
+    Cushion cushions[6];
+    Pocket pockets[6];
     Ball *cueBall;
     Ball balls[16];
     CueStick cueStick;
     GameState state;
 } GameWorld;
+
+typedef struct CollisionResult {
+    bool hasCollision;
+    float t;              // Tempo de colisão (0 a 1)
+    Vector2 point;        // Ponto de contato
+    Vector2 normal;       // Normal da colisão
+} CollisionResult;
