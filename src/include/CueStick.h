@@ -12,4 +12,4 @@
 
 void updateCueStick( CueStick *cs, float delta );
 void drawCueStick( CueStick *cs );
-float getCueStickImpulsePercentage( CueStick *cs );
+float getCueStickPowerPercentage( CueStick *cs );

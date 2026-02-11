@@ -45,7 +45,7 @@ void drawBall( Ball *b ) {
         DrawLineEx( 
             (Vector2) { b->center.x - b->radius, b->center.y}, 
             (Vector2) { b->center.x + b->radius, b->center.y}, 
-            2, 
+            4, 
             WHITE
         );
     }

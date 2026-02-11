@@ -43,6 +43,25 @@ static const int TABLE_MARGIN = 40;
 
 static float marksSpacing;
 
+static Color scoreColors[] = { 
+    EBP_YELLOW, // 1
+    EBP_BLUE,   // 2
+    EBP_RED,    // 3
+    EBP_PURPLE, // 4
+    EBP_ORANGE, // ...
+    EBP_GREEN,
+    EBP_BROWN,
+    { 0, 0, 0, 255 },
+    EBP_YELLOW,
+    EBP_BLUE,
+    EBP_RED,
+    EBP_PURPLE,
+    EBP_ORANGE,
+    EBP_GREEN,
+    EBP_BROWN   // 15
+};
+
+static void drawHud( GameWorld *gw );
 static void setupGameWorld( GameWorld *gw );
 static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size );
 static void prepareBallData( Color *colors, bool *striped, int *numbers, bool shuffleBalls );
@@ -80,12 +99,18 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     if ( gw->state == GAME_STATE_BALLS_STOPPED ) {
 
         if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
-            gw->cueBall->vel.x = gw->cueStick.power * cosf( DEG2RAD * gw->cueStick.angle );
-            gw->cueBall->vel.y = gw->cueStick.power * sinf( DEG2RAD * gw->cueStick.angle );
-            gw->cueStick.power = gw->cueStick.minPower;
+            CueStick *cc = gw->currentCueStick;
+            gw->cueBall->vel.x = cc->power * cosf( DEG2RAD * cc->angle );
+            gw->cueBall->vel.y = cc->power * sinf( DEG2RAD * cc->angle );
+            cc->power = cc->minPower;
+            if ( cc == &gw->cueStickP1 ) {
+                gw->currentCueStick = &gw->cueStickP2;
+            } else {
+                gw->currentCueStick = &gw->cueStickP1;
+            }
         }
 
-        updateCueStick( &gw->cueStick, delta );
+        updateCueStick( gw->currentCueStick, delta );
 
     }
 
@@ -147,10 +172,20 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
             // more than 50% of ball is inside the pocket
             if ( dist < gw->pockets[j].radius - b->radius * 0.5f ) {
+
                 b->pocketed = true;
                 b->vel = (Vector2) { 0 };
                 b->moving = false;
+
+                // player 2 pocketed
+                if ( gw->currentCueStick == &gw->cueStickP1 ) {
+                    gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
+                } else {
+                    gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
+                }
+
                 break;
+
             }
 
         }
@@ -161,7 +196,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
     }
 
-    gw->cueStick.target = gw->cueBall->center;
+    gw->currentCueStick->target = gw->cueBall->center;
 
     if ( ballsMoving ) {
         gw->state = GAME_STATE_BALLS_MOVING;
@@ -177,7 +212,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 void drawGameWorld( GameWorld *gw ) {
 
     BeginDrawing();
-    ClearBackground( DARKBLUE );
+    ClearBackground( (Color) { 28, 38, 58, 255 } );
 
     DrawRectangleRounded( 
         (Rectangle) {
@@ -188,7 +223,7 @@ void drawGameWorld( GameWorld *gw ) {
         },
         0.1f,
         10,
-        BROWN
+        (Color) { 135, 38, 8, 255 }
     );
 
     DrawRectangleRoundedLines( 
@@ -264,10 +299,162 @@ void drawGameWorld( GameWorld *gw ) {
     }
 
     if ( gw->state == GAME_STATE_BALLS_STOPPED ) {
-        drawCueStick( &gw->cueStick );
+        drawCueStick( gw->currentCueStick );
     }
 
+    drawHud( gw );
+
     EndDrawing();
+
+}
+
+static void drawHud( GameWorld *gw ) {
+    
+    int width = 16;
+    int height = 200;
+
+    int x = GetScreenWidth() - width - 20;
+    int y = GetScreenHeight() / 2 - height / 2;
+
+    float powerP = getCueStickPowerPercentage( gw->currentCueStick );
+    float powerHeight = ( height - 4 ) * powerP;
+    float powerHue = 120.0f - 120.0f * powerP;
+
+    DrawRectangle( x, y, width, height, BLACK );
+    DrawRectangle( x + 3, y + 3, width - 6, height - 6, RAYWHITE );
+    DrawRectangle( x + 3, y + 3 + height - 4 - powerHeight, width - 6, powerHeight, ColorFromHSV( powerHue, 1.0f, 1.0f ) );
+
+    const char *percT = TextFormat( "%.2f%%", powerP * 100 );
+    int wPercT = MeasureText( percT, 10 );
+
+    DrawText( percT, x + width / 2 - wPercT / 2, y + height + 5, 10, WHITE );
+
+    DrawRectangleRounded( 
+        (Rectangle) {
+            -50, -50, 330, 90
+        },
+        0.4f,
+        10,
+        (Color) { 14, 18, 33, 255 }
+    );
+
+    DrawRectangleRoundedLines( 
+        (Rectangle) {
+            -50, -50, 330, 90
+        },
+        0.4f,
+        10,
+        RAYWHITE
+    );
+
+    DrawRectangleRounded( 
+        (Rectangle) {
+            5, 5, 40, 28
+        },
+        0.4f,
+        10,
+        gw->cueStickP1.color
+    );
+
+    DrawText( "P1", 15, 10, 20, RAYWHITE );
+
+    DrawRectangleRounded( 
+        (Rectangle) {
+            GetScreenWidth() / 2 + 170, -50, 330, 90
+        },
+        0.4f,
+        10,
+        (Color) { 14, 18, 33, 255 }
+    );
+
+    DrawRectangleRoundedLines( 
+        (Rectangle) {
+            GetScreenWidth() / 2 + 170, -50, 330, 90
+        },
+        0.4f,
+        10,
+        RAYWHITE
+    );
+
+    DrawRectangleRounded( 
+        (Rectangle) {
+            GetScreenWidth() - 45, 5, 40, 28
+        },
+        0.4f,
+        10,
+        gw->cueStickP2.color
+    );
+
+    DrawText( "P2", GetScreenWidth() - 45 + 8, 10, 20, RAYWHITE );
+
+    if ( gw->currentCueStick == &gw->cueStickP1 ) {
+        DrawRectangleRoundedLines( 
+            (Rectangle) {
+                5, 5, 40, 28
+            },
+            0.4f,
+            10,
+            RAYWHITE
+        );
+    } else {
+        DrawRectangleRoundedLines( 
+            (Rectangle) {
+                GetScreenWidth() - 45, 5, 40, 28
+            },
+            0.4f,
+            10,
+            RAYWHITE
+        );
+    }
+
+    int spacing = 8;
+    int radius = BALL_RADIUS + 2;
+
+    int startScoreP1 = 65;
+    int startScoreP2 = 642;
+
+    // TODO: refactor
+    for ( int i = 0; i < 7; i++ ) {
+        int x = startScoreP1 + ( radius * 2 + spacing ) * i;
+        DrawCircle( x, 19, radius, (Color) { 23, 23, 27, 255 } );
+        DrawCircleLines( x, 19, radius, GRAY );
+        if ( i < gw->cueStickP1.pocketedCount ) {
+            int number = gw->cueStickP1.pocketedBalls[i];
+            DrawCircle( x, 19, radius - 2, scoreColors[number-1] );
+            if ( number > 8 ) {
+                DrawLineEx( 
+                    (Vector2) { x - radius + 2, 19 }, 
+                    (Vector2) { x + radius - 2, 19 }, 
+                    4, 
+                    WHITE
+                );
+            }
+            const char *numberText = TextFormat( "%d", number );
+            int w = MeasureText( numberText, 14 );
+            DrawText( numberText, x - w / 2, 13, 14, BLACK );
+        }
+    }
+    
+    for ( int i = 0; i < 7; i++ ) {
+        int x = startScoreP2 + ( radius * 2 + spacing ) * i;
+        DrawCircle( x, 19, radius, (Color) { 23, 23, 27, 255 } );
+        DrawCircleLines( x, 19, radius, GRAY );
+        if ( i < gw->cueStickP2.pocketedCount ) {
+            int number = gw->cueStickP2.pocketedBalls[i];
+            DrawCircle( x, 19, radius - 2, scoreColors[number-1] );
+            if ( number > 8 ) {
+                DrawLineEx( 
+                    (Vector2) { x - radius + 2, 19 }, 
+                    (Vector2) { x + radius - 2, 19 }, 
+                    4, 
+                    WHITE
+                );
+            }
+            const char *numberText = TextFormat( "%d", number );
+            int w = MeasureText( numberText, 14 );
+            DrawText( numberText, x - w / 2, 13, 14, BLACK );
+        }
+    }
 
 }
 
@@ -442,15 +629,42 @@ static void setupGameWorld( GameWorld *gw ) {
         }
     }
     
-    gw->cueStick = (CueStick) {
+    int powerTick = 10;
+    int maxPower = 1400;
+
+    gw->cueStickP1 = (CueStick) {
         .target = gw->cueBall->center,
         .distanceFromTarget = BALL_RADIUS,
-        .size = 200,
+        .size = 300,
         .angle = 0,
-        .power = 10,
-        .minPower = 10,
-        .maxPower = 1400
+        .powerTick = powerTick,
+        .power = powerTick,
+        .minPower = powerTick,
+        .maxPower = maxPower,
+        .color = { 17, 50, 102, 255 },
+        .pocketedBalls = { 0 },
+        .pocketedCount = 0
+        /*.pocketedBalls = { 1, 2, 3, 4, 5, 6, 7 },
+        .pocketedCount = 7*/
     };
+
+    gw->cueStickP2 = (CueStick) {
+        .target = gw->cueBall->center,
+        .distanceFromTarget = BALL_RADIUS,
+        .size = 300,
+        .angle = 0,
+        .powerTick = powerTick,
+        .power = powerTick,
+        .minPower = powerTick,
+        .maxPower = maxPower,
+        .color = { 102, 17, 37, 255 },
+        .pocketedBalls = { 0 },
+        .pocketedCount = 0
+        /*.pocketedBalls = { 9, 10, 11, 12, 13, 14, 15 },
+        .pocketedCount = 7*/
+    };
+
+    gw->currentCueStick = &gw->cueStickP1;
 
     gw->state = GAME_STATE_BALLS_STOPPED;
 

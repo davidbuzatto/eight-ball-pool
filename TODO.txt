@@ -1,15 +1,6 @@
 Criar cenários de teste;
     Poder mover bolas com o botão direito!
 
-Adicionar segundo jogador;
-
-Diferenciar tacos;
-
-Criar placar;
-
-Melhorar a interface (mostrar a potência do inpulso);
-    Barra para potência;
-
 Estudar e implementar regras;
 
 Refatorar código:
@@ -18,5 +9,4 @@ Refatorar código:
 
 Adicionar som;
 
-Criar um desenho (textura) para substituir o desenho?
-
+Refatorações.

@@ -34,9 +34,13 @@ typedef struct CueStick {
     float distanceFromTarget;
     float size;
     float angle;
+    int powerTick;
     int power;
     int minPower;
     int maxPower;
+    Color color;
+    int pocketedBalls[7];
+    int pocketedCount;
 } CueStick;
 
 typedef struct Cushion {
@@ -54,7 +58,9 @@ typedef struct GameWorld {
     Pocket pockets[6];
     Ball *cueBall;
     Ball balls[16];
-    CueStick cueStick;
+    CueStick cueStickP1;
+    CueStick cueStickP2;
+    CueStick *currentCueStick;
     GameState state;
 } GameWorld;
 

@@ -1,7 +1,7 @@
 /**
  * @file CueStick.c
  * @author Prof. Dr. David Buzatto
- * @brief Cue Stick implementation.
+ * @brief Cue Stick implementation. Each cue stick represents a player.
  * 
  * @copyright Copyright (c) 2026
  */
@@ -20,9 +20,9 @@ void updateCueStick( CueStick *cs, float delta ) {
     float mouseWheelMove = GetMouseWheelMove();
     
     if ( mouseWheelMove < 0.0f ) {
-        cs->power += 10;
+        cs->power += cs->powerTick;
     } else if ( mouseWheelMove > 0.0f ) {
-        cs->power -= 10;
+        cs->power -= cs->powerTick;
     }
 
     if ( cs->power < cs->minPower ) {
@@ -37,16 +37,22 @@ void drawCueStick( CueStick *cs ) {
 
     float c = cosf( DEG2RAD * cs->angle );
     float s = sinf( DEG2RAD * cs->angle );
+    float powerP = getCueStickPowerPercentage( cs );
 
     float wSize = cs->size * c;
     float hSize = cs->size * s;
+    
+    float wTipSize = 5 * c;
+    float hTipSize = 5 * s;
 
-    float inpulsePerc = getCueStickImpulsePercentage( cs );
-    float wDist = ( inpulsePerc * 100 + cs->distanceFromTarget ) * c;
-    float hDist = ( inpulsePerc * 100 + cs->distanceFromTarget ) * s;
+    float wHandSize = 80 * c;
+    float hHandSize = 80 * s;
 
-    float wPath = 1000 * c;
-    float hPath = 1000 * s;
+    float wDist = ( powerP * 100 + cs->distanceFromTarget ) * c;
+    float hDist = ( powerP * 100 + cs->distanceFromTarget ) * s;
+
+    float wPath = 1200 * c;
+    float hPath = 1200 * s;
 
     DrawLineEx( 
         (Vector2) {
@@ -58,7 +64,33 @@ void drawCueStick( CueStick *cs ) {
             cs->target.y - hDist
         },
         5,
-        DARKBROWN
+        cs->color
+    );
+
+    DrawLineEx( 
+        (Vector2) {
+            cs->target.x - wDist - wTipSize,
+            cs->target.y - hDist - hTipSize
+        },
+        (Vector2) {
+            cs->target.x - wDist,
+            cs->target.y - hDist
+        },
+        5,
+        WHITE
+    );
+
+    DrawLineEx( 
+        (Vector2) {
+            cs->target.x - wDist - wSize,
+            cs->target.y - hDist - hSize
+        },
+        (Vector2) {
+            cs->target.x - wDist - wSize + wHandSize,
+            cs->target.y - hDist - hSize + hHandSize
+        },
+        5,
+        (Color) { 36, 9, 1, 255 }
     );
 
     DrawLineV( 
@@ -72,6 +104,6 @@ void drawCueStick( CueStick *cs ) {
 
 }
 
-float getCueStickImpulsePercentage( CueStick *cs ) {
-    return cs->power / ( (float) cs->maxPower - (float) cs->minPower );
+float getCueStickPowerPercentage( CueStick *cs ) {
+    return cs->power / (float) cs->maxPower;
 }
