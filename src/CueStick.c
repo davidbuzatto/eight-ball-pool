@@ -20,15 +20,15 @@ void updateCueStick( CueStick *cs, float delta ) {
     float mouseWheelMove = GetMouseWheelMove();
     
     if ( mouseWheelMove < 0.0f ) {
-        cs->impulse += 10;
+        cs->power += 10;
     } else if ( mouseWheelMove > 0.0f ) {
-        cs->impulse -= 10;
+        cs->power -= 10;
     }
 
-    if ( cs->impulse < cs->minImpulse ) {
-        cs->impulse = cs->minImpulse;
-    } else if ( cs->impulse > cs->maxImpulse ) {
-        cs->impulse = cs->maxImpulse;
+    if ( cs->power < cs->minPower ) {
+        cs->power = cs->minPower;
+    } else if ( cs->power > cs->maxPower ) {
+        cs->power = cs->maxPower;
     }
 
 }
@@ -73,5 +73,5 @@ void drawCueStick( CueStick *cs ) {
 }
 
 float getCueStickImpulsePercentage( CueStick *cs ) {
-    return cs->impulse / ( (float) cs->maxImpulse - (float) cs->minImpulse );
+    return cs->power / ( (float) cs->maxPower - (float) cs->minPower );
 }

@@ -80,9 +80,9 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     if ( gw->state == GAME_STATE_BALLS_STOPPED ) {
 
         if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
-            gw->cueBall->vel.x = gw->cueStick.impulse * cosf( DEG2RAD * gw->cueStick.angle );
-            gw->cueBall->vel.y = gw->cueStick.impulse * sinf( DEG2RAD * gw->cueStick.angle );
-            gw->cueStick.impulse = gw->cueStick.minImpulse;
+            gw->cueBall->vel.x = gw->cueStick.power * cosf( DEG2RAD * gw->cueStick.angle );
+            gw->cueBall->vel.y = gw->cueStick.power * sinf( DEG2RAD * gw->cueStick.angle );
+            gw->cueStick.power = gw->cueStick.minPower;
         }
 
         updateCueStick( &gw->cueStick, delta );
@@ -447,9 +447,9 @@ static void setupGameWorld( GameWorld *gw ) {
         .distanceFromTarget = BALL_RADIUS,
         .size = 200,
         .angle = 0,
-        .impulse = 10,
-        .minImpulse = 10,
-        .maxImpulse = 1400
+        .power = 10,
+        .minPower = 10,
+        .maxPower = 1400
     };
 
     gw->state = GAME_STATE_BALLS_STOPPED;

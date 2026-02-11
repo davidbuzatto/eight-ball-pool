@@ -12,7 +12,7 @@
 
 typedef enum GameState {
     GAME_STATE_BALLS_STOPPED,
-    GAME_STATE_BALLS_MOVING,
+    GAME_STATE_BALLS_MOVING
 } GameState;
 
 typedef struct Ball {
@@ -34,9 +34,9 @@ typedef struct CueStick {
     float distanceFromTarget;
     float size;
     float angle;
-    int impulse;
-    int minImpulse;
-    int maxImpulse;
+    int power;
+    int minPower;
+    int maxPower;
 } CueStick;
 
 typedef struct Cushion {
