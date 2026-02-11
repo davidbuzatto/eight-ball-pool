@@ -5,6 +5,7 @@
  * 
  * @copyright Copyright (c) 2026
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -29,14 +30,8 @@
 #define BALL_ELASTICITY 0.9f
 #define SHUFFLE_BALLS true
 
-static void resolveCollisionBallBall( Ball *b1, Ball *b2 );
 static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size );
 static void prepareBallData( Color *colors, bool *striped, int *numbers, bool shuffleBalls );
-
-static CollisionResult circleSegmentCollision( Vector2 circlePos, Vector2 prevPos, float radius, Vector2 segStart, Vector2 segEnd );
-static CollisionResult circlePointSweep( Vector2 prevPos, Vector2 currPos, float radius, Vector2 point );
-static CollisionResult circleQuadCollision( Vector2 circlePos, Vector2 prevPos, float radius, Vector2* quadVertices, int numVertices );
-static CollisionResult circleCushionCollision( Vector2 circlePos, Vector2 prevPos, float radius, Cushion *c );
 
 static void setupGameWorld( GameWorld *gw ) {
 
@@ -269,7 +264,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
         for ( int j = 0; j < 6; j++ ) {
 
             Cushion *c = &gw->cushions[j];
-            CollisionResult collision = circleCushionCollision( b->center, b->prevPos, b->radius, c );
+            CollisionResult collision = ballCushionCollision( b, c );
 
             if ( collision.hasCollision ) {
 
@@ -443,59 +438,6 @@ void drawGameWorld( GameWorld *gw ) {
 
 }
 
-static void resolveCollisionBallBall( Ball *b1, Ball *b2 ) {
-
-    // vector between centers
-    Vector2 d = {
-        b2->center.x - b1->center.x,
-        b2->center.y - b1->center.y
-    };
-
-    float distance = Vector2Distance( b1->center, b2->center );
-    float minDistance = b1->radius + b2->radius;
-
-    // the balls are not colliding
-    if ( distance >= minDistance ) {
-        return;
-    }
-
-    // normalizing
-    Vector2 norm = {
-        d.x / distance,
-        d.y / distance
-    };
-
-    // important: separate the balls
-    float overlap = minDistance - distance;
-    float separation = overlap / 2.0f;
-
-    b1->center.x -= separation * norm.x;
-    b1->center.y -= separation * norm.y;
-    b2->center.x += separation * norm.x;
-    b2->center.y += separation * norm.y;
-
-    // relative velocity
-    Vector2 v = {
-        b1->vel.x - b2->vel.x,
-        b1->vel.y - b2->vel.y
-    };
-
-    // velocity on normal
-    float dotProduct = Vector2DotProduct( v, norm );
-
-    // do not collide if the balls are moving away
-    if ( dotProduct <= 0 ) {
-        return;
-    }
-
-    // transfer momentum (equal mass)
-    b1->vel.x -= dotProduct * norm.x;
-    b1->vel.y -= dotProduct * norm.y;
-    b2->vel.x += dotProduct * norm.x;
-    b2->vel.y += dotProduct * norm.y;
-
-}
-
 static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size ) {
     for ( int i = 0; i < size; i++ ) {
         int p = GetRandomValue( 0, size - 1 );
@@ -573,150 +515,4 @@ static void prepareBallData( Color *colors, bool *striped, int *numbers, bool sh
         }
     }
 
-}
-
-// Verifica colisão círculo vs segmento de linha
-static CollisionResult circleSegmentCollision( Vector2 circlePos, Vector2 prevPos, float radius, 
-                                               Vector2 segStart, Vector2 segEnd ) {
-    CollisionResult result = { 0 };
-
-    Vector2 movement = Vector2Subtract( circlePos, prevPos );
-
-    // Se não há movimento, não há colisão sweep
-    if ( Vector2Length( movement ) < 0.001f ) {
-        return result;
-    }
-
-    Vector2 segDir = Vector2Subtract( segEnd, segStart );
-    float segLen = Vector2Length( segDir );
-    Vector2 segNorm = Vector2Normalize( segDir );
-
-    // Normal do segmento (perpendicular, aponta para "fora")
-    Vector2 normal = { segNorm.y, -segNorm.x };
-
-    // Distância do centro atual à linha
-    Vector2 toLineCurr = Vector2Subtract( circlePos, segStart );
-    float distCurr = Vector2DotProduct( toLineCurr, normal );
-
-    // Distância do centro anterior à linha
-    Vector2 toLinePrev = Vector2Subtract( prevPos, segStart );
-    float distPrev = Vector2DotProduct( toLinePrev, normal );
-
-    // Verifica se está se aproximando da linha
-    if ( distCurr >= distPrev ) {
-        return result; // Afastando ou paralelo
-    }
-
-    // Verifica se vai colidir neste frame
-    if ( distCurr > radius || distPrev < -radius ) {
-        return result; // Muito longe
-    }
-
-    // Calcula t (quando o círculo toca a linha)
-    float distChange = distCurr - distPrev;
-    float t = ( distPrev - radius ) / -distChange;
-
-    // Clamp t entre 0 e 1
-    if ( t < 0.0f ) t = 0.0f;
-    if ( t > 1.0f ) t = 1.0f;
-
-    // Posição do centro no momento da colisão
-    Vector2 collisionCenter = Vector2Add( prevPos, Vector2Scale( movement, t ) );
-
-    // Projeção no segmento
-    Vector2 toCollision = Vector2Subtract( collisionCenter, segStart );
-    float projection = Vector2DotProduct( toCollision, segNorm );
-
-    // Verifica se está dentro do segmento (com margem)
-    if ( projection >= -0.1f && projection <= segLen + 0.1f ) {
-        result.hasCollision = true;
-        result.t = t;
-        result.point = Vector2Add( collisionCenter, Vector2Scale( normal, -radius ) );
-        result.normal = normal;
-    }
-
-    return result;
-
-}
-
-
-// colisão do círculo em movimento com um ponto (vértice)
-static CollisionResult circlePointSweep( Vector2 prevPos, Vector2 currPos, float radius, Vector2 point ) {
-
-    CollisionResult result = { 0 };
-
-    Vector2 movement = Vector2Subtract( currPos, prevPos );
-    Vector2 toPoint = Vector2Subtract( point, prevPos );
-
-    float a = Vector2DotProduct( movement, movement );
-    float b = -2.0f * Vector2DotProduct( movement, toPoint );
-    float c = Vector2DotProduct( toPoint, toPoint ) - radius * radius;
-
-    float discriminant = b * b - 4 * a * c;
-
-    if ( discriminant < 0 || a == 0 ) {
-        return result;
-    }
-
-    float t = ( -b - sqrtf( discriminant ) ) / ( 2.0f * a );
-
-    if ( t >= 0 && t <= 1 ) {
-
-        Vector2 collisionCenter = Vector2Add( prevPos, Vector2Scale( movement, t ) );
-        Vector2 normal = Vector2Normalize( Vector2Subtract( collisionCenter, point ) );
-
-        result.hasCollision = true;
-        result.t = t;
-        result.point = Vector2Add( point, Vector2Scale( normal, radius ) );
-        result.normal = normal;
-
-    }
-
-    return result;
-
-}
-
-// função principal: círculo vs quadrilátero
-static CollisionResult circleQuadCollision( Vector2 circlePos, Vector2 prevPos, float radius, 
-                                            Vector2* quadVertices, int numVertices ) {
-
-    CollisionResult earliestCollision = { 0 };
-    float minT = INFINITY;
-
-    // verifica cada aresta do quadrilátero
-    for ( int i = 0; i < numVertices; i++ ) {
-
-        Vector2 start = quadVertices[i];
-        Vector2 end = quadVertices[(i + 1) % numVertices];
-
-        CollisionResult collision = circleSegmentCollision( circlePos, prevPos, radius, start, end );
-
-        if ( collision.hasCollision && collision.t < minT ) {
-            minT = collision.t;
-            earliestCollision = collision;
-        }
-
-    }
-
-    // verifica colisão com os vértices
-    if ( !earliestCollision.hasCollision ) {
-        for ( int i = 0; i < numVertices; i++ ) {
-
-            CollisionResult collision = circlePointSweep( prevPos, circlePos, radius, quadVertices[i] );
-
-            if ( collision.hasCollision && collision.t < minT ) {
-                minT = collision.t;
-                earliestCollision = collision;
-            }
-
-        }
-
-    }
-
-    return earliestCollision;
-
-}
-
-static CollisionResult circleCushionCollision( Vector2 circlePos, Vector2 prevPos, float radius, Cushion *c ) {
-    return circleQuadCollision( circlePos, prevPos, radius, c->vertices, 4 );
 }

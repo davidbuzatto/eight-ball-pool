@@ -1,3 +1,11 @@
+/**
+ * @file Types.h
+ * @author Prof. Dr. David Buzatto
+ * @brief Type structs for the game.
+ * 
+ * @copyright Copyright (c) 2026
+ */
+
 #pragma once
 
 #include "raylib/raylib.h"
@@ -52,7 +60,7 @@ typedef struct GameWorld {
 
 typedef struct CollisionResult {
     bool hasCollision;
-    float t;              // Tempo de colisão (0 a 1)
-    Vector2 point;        // Ponto de contato
-    Vector2 normal;       // Normal da colisão
+    float t;              // collision time (0 to 1)
+    Vector2 point;        // point of contact
+    Vector2 normal;       // collision normal
 } CollisionResult;

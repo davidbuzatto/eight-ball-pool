@@ -1,3 +1,11 @@
+/**
+ * @file CueStick.c
+ * @author Prof. Dr. David Buzatto
+ * @brief Cue Stick implementation.
+ * 
+ * @copyright Copyright (c) 2026
+ */
+
 #include <math.h>
 
 #include "raylib/raylib.h"
@@ -33,7 +41,7 @@ void drawCueStick( CueStick *cs ) {
     float wSize = cs->size * c;
     float hSize = cs->size * s;
 
-    float inpulsePerc = cs->impulse / ( (float) cs->maxImpulse - (float) cs->minImpulse );
+    float inpulsePerc = getCueStickImpulsePercentage( cs );
     float wDist = ( inpulsePerc * 100 + cs->distanceFromTarget ) * c;
     float hDist = ( inpulsePerc * 100 + cs->distanceFromTarget ) * s;
 
@@ -62,4 +70,8 @@ void drawCueStick( CueStick *cs ) {
         Fade( WHITE, 0.5f )
     );
 
+}
+
+float getCueStickImpulsePercentage( CueStick *cs ) {
+    return cs->impulse / ( (float) cs->maxImpulse - (float) cs->minImpulse );
 }

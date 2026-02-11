@@ -1,7 +1,7 @@
 /**
  * @file GameWorld.h
  * @author Prof. Dr. David Buzatto
- * @brief GameWorld struct and function declarations.
+ * @brief Game World function declarations.
  * 
  * @copyright Copyright (c) 2025
  */
