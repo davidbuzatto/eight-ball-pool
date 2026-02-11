@@ -9,8 +9,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "ResourceManager.h"
 #include "raylib/raylib.h"
+
+#include "ResourceManager.h"
 
 ResourceManager rm = { 0 };
 

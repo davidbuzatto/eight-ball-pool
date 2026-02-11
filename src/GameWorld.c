@@ -10,19 +10,17 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "GameWorld.h"
-#include "Types.h"
-
-#include "Ball.h"
-#include "CueStick.h"
-
-#include "ResourceManager.h"
-
 #include "raylib/raylib.h"
 #include "raylib/raymath.h"
 //#define RAYGUI_IMPLEMENTATION    // to use raygui, comment these three lines.
 //#include "raylib/raygui.h"       // other compilation units must only include
 //#undef RAYGUI_IMPLEMENTATION     // raygui.h
+
+#include "GameWorld.h"
+#include "Types.h"
+#include "Ball.h"
+#include "CueStick.h"
+#include "ResourceManager.h"
 
 #define BALL_COUNT 15
 #define BALL_RADIUS 10

@@ -7,6 +7,7 @@
  */
 
 #include <math.h>
+
 #include "raylib/raylib.h"
 #include "raylib/raymath.h"
 
