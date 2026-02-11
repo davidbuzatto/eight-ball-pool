@@ -16,11 +16,13 @@
 //#include "raylib/raygui.h"       // other compilation units must only include
 //#undef RAYGUI_IMPLEMENTATION     // raygui.h
 
-#include "GameWorld.h"
-#include "Types.h"
 #include "Ball.h"
 #include "CueStick.h"
+#include "Cushion.h"
+#include "GameWorld.h"
+#include "Pocket.h"
 #include "ResourceManager.h"
+#include "Types.h"
 
 #define BALL_COUNT 15
 #define BALL_RADIUS 10
@@ -28,181 +30,22 @@
 #define BALL_ELASTICITY 0.9f
 #define SHUFFLE_BALLS true
 
+static const Color EBP_YELLOW = { .r = 255, .g = 215, .b = 0,   .a = 255 };
+static const Color EBP_BLUE   = { .r = 0,   .g = 100, .b = 200, .a = 255 };
+static const Color EBP_RED    = { .r = 220, .g = 20,  .b = 60,  .a = 255 };
+static const Color EBP_PURPLE = { .r = 75,  .g = 0,   .b = 130, .a = 255 };
+static const Color EBP_ORANGE = { .r = 255, .g = 100, .b = 0,   .a = 255 };
+static const Color EBP_GREEN  = { .r = 0,   .g = 128, .b = 0,   .a = 255 };
+static const Color EBP_BROWN  = { .r = 139, .g = 69,  .b = 19,  .a = 255 };
+
+static const int MARGIN = 100;
+static const int TABLE_MARGIN = 40;
+
+static float marksSpacing;
+
+static void setupGameWorld( GameWorld *gw );
 static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size );
 static void prepareBallData( Color *colors, bool *striped, int *numbers, bool shuffleBalls );
-
-static void setupGameWorld( GameWorld *gw ) {
-
-    int margin = 100;
-    int tableMargin = 40;
-
-    Color colors[15];
-    bool striped[15];
-    int numbers[15];
-
-    prepareBallData( colors, striped, numbers, SHUFFLE_BALLS );
-
-    gw->boundarie = (Rectangle) {
-        margin,
-        margin,
-        700,
-        350
-    };
-
-    gw->pockets[0] = (Pocket) {
-        .center = {
-            gw->boundarie.x - tableMargin / 2 + 6, 
-            gw->boundarie.y - tableMargin / 2 + 6
-        },
-        .radius = tableMargin / 2
-    };
-
-    gw->pockets[1] = (Pocket) {
-        .center = {
-            gw->boundarie.x + gw->boundarie.width / 2, 
-            gw->boundarie.y - tableMargin / 2 + 3, 
-        },
-        .radius = tableMargin / 2.5f
-    };
-
-    gw->pockets[2] = (Pocket) {
-        .center = {
-            gw->boundarie.x + gw->boundarie.width + tableMargin / 2 - 6, 
-            gw->boundarie.y - tableMargin / 2 + 6
-        },
-        .radius = tableMargin / 2
-    };
-
-    gw->pockets[3] = (Pocket) {
-        .center = {
-            gw->boundarie.x - tableMargin / 2 + 6, 
-            gw->boundarie.y + gw->boundarie.height + tableMargin / 2 - 6
-        },
-        .radius = tableMargin / 2
-    };
-
-    gw->pockets[4] = (Pocket) {
-        .center = {
-            gw->boundarie.x + gw->boundarie.width / 2, 
-            gw->boundarie.y + gw->boundarie.height + tableMargin / 2 - 3
-        },
-        .radius = tableMargin / 2.5f
-    };
-
-    gw->pockets[5] = (Pocket) {
-        .center = {
-            gw->boundarie.x + gw->boundarie.width + tableMargin / 2 - 6, 
-            gw->boundarie.y + gw->boundarie.height + tableMargin / 2 - 6
-        },
-        .radius = tableMargin / 2
-    };
-
-    gw->cushions[0] = (Cushion) {
-        {
-            { 105, 86 },
-            { 435, 86 },
-            { 430, 100 },
-            { 120, 100 }
-        }
-    };
-
-    gw->cushions[1] = (Cushion) {
-        {
-            { 465, 86 },
-            { 795, 86 },
-            { 780, 100 },
-            { 470, 100 }
-        }
-    };
-
-    gw->cushions[2] = (Cushion) {
-        {
-            { 120, 450 },
-            { 430, 450 },
-            { 435, 464 },
-            { 105, 464 }
-        }
-    };
-
-    gw->cushions[3] = (Cushion) {
-        {
-            { 470, 450 },
-            { 780, 450 },
-            { 795, 464 },
-            { 465, 464 }
-        }
-    };
-
-    gw->cushions[4] = (Cushion) {
-        {
-            { 86, 105 },
-            { 100, 120 },
-            { 100, 430 },
-            { 86, 445 }
-        }
-    };
-
-    gw->cushions[5] = (Cushion) {
-        {
-            { 800, 120 },
-            { 814, 105 },
-            { 814, 445 },
-            { 800, 430 }
-        }
-    };
-
-    // cue ball
-    gw->cueBall = &gw->balls[0];
-    gw->balls[0] = (Ball) {
-        .center = { gw->boundarie.x + gw->boundarie.width / 4, GetScreenHeight() / 2 },
-        .radius = BALL_RADIUS,
-        .vel = { 0, 0 },
-        .friction = BALL_FRICTION,
-        .elasticity = BALL_ELASTICITY,
-        .color = WHITE,
-        .striped = false,
-        .number = 0,
-        .pocketed = false
-    };
-    gw->balls[0].prevPos = gw->balls[0].center;
-
-    int k = 1;
-    for ( int i = 0; i < 5; i++ ) {
-        float iniY = GetScreenHeight() / 2 - BALL_RADIUS * i;
-        for ( int j = 0; j <= i; j++ ) {
-            gw->balls[k] = (Ball) {
-                .center = { 
-                    gw->boundarie.x + gw->boundarie.width - gw->boundarie.width / 4 + ( BALL_RADIUS * 2 ) * i - 2.5f * i, 
-                    iniY + ( BALL_RADIUS * 2 ) * j + 0.5f * j
-                },
-                .prevPos = { 0 },
-                .radius = BALL_RADIUS,
-                .vel = { 0, 0 },
-                .friction = BALL_FRICTION,
-                .elasticity = BALL_ELASTICITY,
-                .color = colors[k-1],
-                .striped = striped[k-1],
-                .number = numbers[k-1],
-                .pocketed = false
-            };
-            gw->balls[k].prevPos = gw->balls[k].center;
-            k++;
-        }
-    }
-    
-    gw->cueStick = (CueStick) {
-        .target = gw->cueBall->center,
-        .distanceFromTarget = BALL_RADIUS,
-        .size = 200,
-        .angle = 0,
-        .impulse = 10,
-        .minImpulse = 10,
-        .maxImpulse = 1400
-    };
-
-    gw->state = GAME_STATE_BALLS_STOPPED;
-
-}
 
 /**
  * @brief Creates a dinamically allocated GameWorld struct instance.
@@ -336,15 +179,12 @@ void drawGameWorld( GameWorld *gw ) {
     BeginDrawing();
     ClearBackground( DARKBLUE );
 
-    float space = gw->boundarie.width / 8;
-    int tableMargin = 40;
-
     DrawRectangleRounded( 
         (Rectangle) {
-            gw->boundarie.x - tableMargin,
-            gw->boundarie.y - tableMargin,
-            gw->boundarie.width + tableMargin * 2,
-            gw->boundarie.height + tableMargin * 2
+            gw->boundarie.x - TABLE_MARGIN,
+            gw->boundarie.y - TABLE_MARGIN,
+            gw->boundarie.width + TABLE_MARGIN * 2,
+            gw->boundarie.height + TABLE_MARGIN * 2
         },
         0.1f,
         10,
@@ -353,10 +193,10 @@ void drawGameWorld( GameWorld *gw ) {
 
     DrawRectangleRoundedLines( 
         (Rectangle) {
-            gw->boundarie.x - tableMargin,
-            gw->boundarie.y - tableMargin,
-            gw->boundarie.width + tableMargin * 2,
-            gw->boundarie.height + tableMargin * 2
+            gw->boundarie.x - TABLE_MARGIN,
+            gw->boundarie.y - TABLE_MARGIN,
+            gw->boundarie.width + TABLE_MARGIN * 2,
+            gw->boundarie.height + TABLE_MARGIN * 2
         },
         0.1f,
         10,
@@ -364,65 +204,60 @@ void drawGameWorld( GameWorld *gw ) {
     );
 
     DrawRectangle( 
-        gw->boundarie.x - tableMargin / 3,
-        gw->boundarie.y - tableMargin / 3,
-        gw->boundarie.width + tableMargin / 3 * 2,
-        gw->boundarie.height + tableMargin / 3 * 2,
+        gw->boundarie.x - TABLE_MARGIN / 3,
+        gw->boundarie.y - TABLE_MARGIN / 3,
+        gw->boundarie.width + TABLE_MARGIN / 3 * 2,
+        gw->boundarie.height + TABLE_MARGIN / 3 * 2,
         DARKGREEN
     );
 
+    // top marks
     for ( int i = 1; i <= 7; i++ ) {
         if ( i != 4 ) {
             DrawCircle( 
-                gw->boundarie.x + space * i, 
-                gw->boundarie.y - tableMargin / 3 * 2, 
+                gw->boundarie.x + marksSpacing * i, 
+                gw->boundarie.y - TABLE_MARGIN / 3 * 2, 
                 3, WHITE
             );
             DrawCircle( 
-                gw->boundarie.x + space * i, 
-                gw->boundarie.y + gw->boundarie.height + tableMargin / 3 * 2,
+                gw->boundarie.x + marksSpacing * i, 
+                gw->boundarie.y + gw->boundarie.height + TABLE_MARGIN / 3 * 2,
                 3, WHITE
             );
         }
     }
 
+    // bottom marks
     for ( int i = 1; i <= 3; i++ ) {
         DrawCircle( 
-            gw->boundarie.x - tableMargin / 3 * 2, 
-            gw->boundarie.y + space * i, 
+            gw->boundarie.x - TABLE_MARGIN / 3 * 2, 
+            gw->boundarie.y + marksSpacing * i, 
             3, WHITE
         );
         DrawCircle( 
-            gw->boundarie.x + gw->boundarie.width + tableMargin / 3 * 2, 
-            gw->boundarie.y + space * i, 
+            gw->boundarie.x + gw->boundarie.width + TABLE_MARGIN / 3 * 2, 
+            gw->boundarie.y + marksSpacing * i, 
             3, WHITE
         );
     }
 
+    DrawLine( 
+        gw->boundarie.x + marksSpacing * 2, 
+        gw->boundarie.y,
+        gw->boundarie.x + marksSpacing * 2, 
+        gw->boundarie.y + gw->boundarie.height,
+        WHITE
+    );
+
     // pockets
     for ( int i = 0; i < 6; i++ ) {
-        DrawCircleV( 
-            gw->pockets[i].center,
-            gw->pockets[i].radius,
-            BLACK
-        );
+        drawPocket( &gw->pockets[i] );
     }
 
     // cushions
     for ( int i = 0; i < 6; i++ ) {
-        Cushion *c = &gw->cushions[i];
-        for ( int j = 0; j < 4; j++ ) {
-            DrawLineV( c->vertices[j], c->vertices[(j+1)%4], BLACK );
-        }
+        drawCushion( &gw->cushions[i] );
     }
-
-    DrawLine( 
-        gw->boundarie.x + space * 2, 
-        gw->boundarie.y,
-        gw->boundarie.x + space * 2, 
-        gw->boundarie.y + gw->boundarie.height,
-        WHITE
-    );
 
     for ( int i = 0; i <= BALL_COUNT; i++ ) {
         drawBall( &gw->balls[i] );
@@ -433,6 +268,191 @@ void drawGameWorld( GameWorld *gw ) {
     }
 
     EndDrawing();
+
+}
+
+static void setupGameWorld( GameWorld *gw ) {
+
+    Color colors[15];
+    bool striped[15];
+    int numbers[15];
+
+    prepareBallData( colors, striped, numbers, SHUFFLE_BALLS );
+
+    gw->boundarie = (Rectangle) {
+        MARGIN,
+        MARGIN,
+        700,
+        350
+    };
+
+    marksSpacing = gw->boundarie.width / 8;
+
+    // pockets
+    // top left
+    gw->pockets[0] = (Pocket) {
+        .center = {
+            gw->boundarie.x - TABLE_MARGIN / 2 + 6, 
+            gw->boundarie.y - TABLE_MARGIN / 2 + 6
+        },
+        .radius = TABLE_MARGIN / 2
+    };
+
+    // top center
+    gw->pockets[1] = (Pocket) {
+        .center = {
+            gw->boundarie.x + gw->boundarie.width / 2, 
+            gw->boundarie.y - TABLE_MARGIN / 2 + 3, 
+        },
+        .radius = TABLE_MARGIN / 2.5f
+    };
+
+    // top right
+    gw->pockets[2] = (Pocket) {
+        .center = {
+            gw->boundarie.x + gw->boundarie.width + TABLE_MARGIN / 2 - 6, 
+            gw->boundarie.y - TABLE_MARGIN / 2 + 6
+        },
+        .radius = TABLE_MARGIN / 2
+    };
+
+    // bottom left
+    gw->pockets[3] = (Pocket) {
+        .center = {
+            gw->boundarie.x - TABLE_MARGIN / 2 + 6, 
+            gw->boundarie.y + gw->boundarie.height + TABLE_MARGIN / 2 - 6
+        },
+        .radius = TABLE_MARGIN / 2
+    };
+
+    // bottom center
+    gw->pockets[4] = (Pocket) {
+        .center = {
+            gw->boundarie.x + gw->boundarie.width / 2, 
+            gw->boundarie.y + gw->boundarie.height + TABLE_MARGIN / 2 - 3
+        },
+        .radius = TABLE_MARGIN / 2.5f
+    };
+
+    // bottom right
+    gw->pockets[5] = (Pocket) {
+        .center = {
+            gw->boundarie.x + gw->boundarie.width + TABLE_MARGIN / 2 - 6, 
+            gw->boundarie.y + gw->boundarie.height + TABLE_MARGIN / 2 - 6
+        },
+        .radius = TABLE_MARGIN / 2
+    };
+
+    // top left
+    gw->cushions[0] = (Cushion) {
+        {
+            { 105, 86 },
+            { 435, 86 },
+            { 430, 100 },
+            { 120, 100 }
+        }
+    };
+
+    // top right
+    gw->cushions[1] = (Cushion) {
+        {
+            { 465, 86 },
+            { 795, 86 },
+            { 780, 100 },
+            { 470, 100 }
+        }
+    };
+
+    // bottom left
+    gw->cushions[2] = (Cushion) {
+        {
+            { 120, 450 },
+            { 430, 450 },
+            { 435, 464 },
+            { 105, 464 }
+        }
+    };
+
+    // bottom right
+    gw->cushions[3] = (Cushion) {
+        {
+            { 470, 450 },
+            { 780, 450 },
+            { 795, 464 },
+            { 465, 464 }
+        }
+    };
+
+    // head
+    gw->cushions[4] = (Cushion) {
+        {
+            { 86, 105 },
+            { 100, 120 },
+            { 100, 430 },
+            { 86, 445 }
+        }
+    };
+
+    // foot
+    gw->cushions[5] = (Cushion) {
+        {
+            { 800, 120 },
+            { 814, 105 },
+            { 814, 445 },
+            { 800, 430 }
+        }
+    };
+
+    // cue ball
+    gw->cueBall = &gw->balls[0];
+    gw->balls[0] = (Ball) {
+        .center = { gw->boundarie.x + gw->boundarie.width / 4, GetScreenHeight() / 2 },
+        .radius = BALL_RADIUS,
+        .vel = { 0, 0 },
+        .friction = BALL_FRICTION,
+        .elasticity = BALL_ELASTICITY,
+        .color = WHITE,
+        .striped = false,
+        .number = 0,
+        .pocketed = false
+    };
+    gw->balls[0].prevPos = gw->balls[0].center;
+
+    int k = 1;
+    for ( int i = 0; i < 5; i++ ) {
+        float iniY = GetScreenHeight() / 2 - BALL_RADIUS * i;
+        for ( int j = 0; j <= i; j++ ) {
+            gw->balls[k] = (Ball) {
+                .center = { 
+                    gw->boundarie.x + gw->boundarie.width - gw->boundarie.width / 4 + ( BALL_RADIUS * 2 ) * i - 2.5f * i, 
+                    iniY + ( BALL_RADIUS * 2 ) * j + 0.5f * j
+                },
+                .prevPos = { 0 },
+                .radius = BALL_RADIUS,
+                .vel = { 0, 0 },
+                .friction = BALL_FRICTION,
+                .elasticity = BALL_ELASTICITY,
+                .color = colors[k-1],
+                .striped = striped[k-1],
+                .number = numbers[k-1],
+                .pocketed = false
+            };
+            gw->balls[k].prevPos = gw->balls[k].center;
+            k++;
+        }
+    }
+    
+    gw->cueStick = (CueStick) {
+        .target = gw->cueBall->center,
+        .distanceFromTarget = BALL_RADIUS,
+        .size = 200,
+        .angle = 0,
+        .impulse = 10,
+        .minImpulse = 10,
+        .maxImpulse = 1400
+    };
+
+    gw->state = GAME_STATE_BALLS_STOPPED;
 
 }
 
@@ -451,24 +471,24 @@ static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size ) {
 static void prepareBallData( Color *colors, bool *striped, int *numbers, bool shuffleBalls ) {
 
     Color solidColors[] = {
-        (Color) { .r = 255, .g = 215, .b = 0, .a = 255 }, // yellow
-        (Color) { .r = 0, .g = 100, .b = 200, .a = 255 }, // blue
-        (Color) { .r = 220, .g = 20, .b = 60, .a = 255 }, // red
-        (Color) { .r = 75, .g = 0, .b = 130, .a = 255 },  // purple
-        (Color) { .r = 255, .g = 100, .b = 0, .a = 255 }, // orange
-        (Color) { .r = 0, .g = 128, .b = 0, .a = 255 },   // green
-        (Color) { .r = 139, .g = 69, .b = 19, .a = 255 }, // brown
+        EBP_YELLOW,
+        EBP_BLUE,
+        EBP_RED,
+        EBP_PURPLE,
+        EBP_ORANGE,
+        EBP_GREEN,
+        EBP_BROWN
     };
     int solidNumbers[] = { 1, 2, 3, 4, 5, 6, 7 };
 
     Color stripeColors[] = {
-        (Color) { .r = 255, .g = 215, .b = 0, .a = 255 }, // yellow
-        (Color) { .r = 0, .g = 100, .b = 200, .a = 255 }, // blue
-        (Color) { .r = 220, .g = 20, .b = 60, .a = 255 }, // red
-        (Color) { .r = 75, .g = 0, .b = 130, .a = 255 },  // purple
-        (Color) { .r = 255, .g = 100, .b = 0, .a = 255 }, // orange
-        (Color) { .r = 0, .g = 128, .b = 0, .a = 255 },   // green
-        (Color) { .r = 139, .g = 69, .b = 19, .a = 255 }, // brown
+        EBP_YELLOW,
+        EBP_BLUE,
+        EBP_RED,
+        EBP_PURPLE,
+        EBP_ORANGE,
+        EBP_GREEN,
+        EBP_BROWN
     };
     int stripeNumbers[] = { 9, 10, 11, 12, 13, 14, 15 };
 
