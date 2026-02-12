@@ -11,8 +11,8 @@
 #include "raylib/raylib.h"
 #include "raylib/raymath.h"
 
-#include "Types.h"
 #include "Pocket.h"
+#include "Types.h"
 
 void drawPocket( Pocket *p ) {
     DrawCircleV( 

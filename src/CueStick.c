@@ -10,8 +10,8 @@
 
 #include "raylib/raylib.h"
 
-#include "Types.h"
 #include "CueStick.h"
+#include "Types.h"
 
 void updateCueStick( CueStick *cs, float delta ) {
 

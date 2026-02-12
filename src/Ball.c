@@ -11,9 +11,9 @@
 #include "raylib/raylib.h"
 #include "raylib/raymath.h"
 
-#include "Types.h"
 #include "Ball.h"
 #include "ResourceManager.h"
+#include "Types.h"
 
 void updateBall( Ball *b, float delta ) {
 

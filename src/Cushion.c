@@ -11,8 +11,8 @@
 #include "raylib/raylib.h"
 #include "raylib/raymath.h"
 
-#include "Types.h"
 #include "Cushion.h"
+#include "Types.h"
 
 void drawCushion( Cushion *c ) {
     for ( int j = 0; j < 4; j++ ) {

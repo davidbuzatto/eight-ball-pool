@@ -18,15 +18,15 @@ typedef struct ResourceManager {
 
     Music backgroundMusic;
     
-    Sound ballFalling;
-    Sound cueBallHit;
-    Sound cueStickHit;
+    Sound ballFallingSound;
+    Sound cueBallHitSound;
+    Sound cueStickHitSound;
 
-    Sound ballHits[BALL_HIT_COUNT];
+    Sound ballHitSounds[BALL_HIT_COUNT];
     int ballHitCount;
     int ballHitIndex;
 
-    Sound ballCushionHits[BALL_CUSHION_HIT_COUNT];
+    Sound ballCushionHitSounds[BALL_CUSHION_HIT_COUNT];
     int ballCushionHitCount;
     int ballCushionHitIndex;
 

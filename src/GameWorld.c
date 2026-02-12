@@ -24,11 +24,13 @@
 #include "ResourceManager.h"
 #include "Types.h"
 
+#define SHUFFLE_BALLS true
+#define BG_MUSIC_ENABLED false
+
 #define BALL_COUNT 15
 #define BALL_RADIUS 10
 #define BALL_FRICTION 0.99f
 #define BALL_ELASTICITY 0.9f
-#define SHUFFLE_BALLS true
 
 static const Color EBP_YELLOW = { .r = 255, .g = 215, .b = 0,   .a = 255 };
 static const Color EBP_BLUE   = { .r = 0,   .g = 100, .b = 200, .a = 255 };
@@ -71,7 +73,9 @@ void destroyGameWorld( GameWorld *gw ) {
  */
 void updateGameWorld( GameWorld *gw, float delta ) {
 
-    UpdateMusicStream( rm.backgroundMusic );
+    if ( BG_MUSIC_ENABLED ) {
+        UpdateMusicStream( rm.backgroundMusic );
+    }
 
     if ( IsKeyPressed( KEY_R ) ) {
         StopMusicStream( rm.backgroundMusic );
@@ -86,7 +90,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     if ( gw->state == GAME_STATE_BALLS_STOPPED ) {
 
         if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
-            PlaySound( rm.cueStickHit );
+            PlaySound( rm.cueStickHitSound );
             CueStick *cc = gw->currentCueStick;
             gw->cueBall->vel.x = cc->power * cosf( DEG2RAD * cc->angle );
             gw->cueBall->vel.y = cc->power * sinf( DEG2RAD * cc->angle );
@@ -153,7 +157,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                     if ( b == gw->cueBall ) {
                         float speed = sqrtf( b->vel.x * b->vel.x + b->vel.y * b->vel.y );
                         if ( speed > 400.0f ) { // 400 pixels/second
-                            PlaySound( rm.cueBallHit );
+                            PlaySound( rm.cueBallHitSound );
                         } else {
                             playBallHitSound();    
                         }
@@ -173,7 +177,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
             // more than 50% of ball is inside the pocket
             if ( dist < gw->pockets[j].radius - b->radius * 0.5f ) {
 
-                PlaySound( rm.ballFalling );
+                PlaySound( rm.ballFallingSound );
 
                 b->pocketed = true;
                 b->vel = (Vector2) { 0 };
@@ -662,7 +666,10 @@ static void setupGameWorld( GameWorld *gw ) {
     gw->currentCueStick = &gw->cueStickP1;
 
     gw->state = GAME_STATE_BALLS_STOPPED;
-    PlayMusicStream( rm.backgroundMusic );
+
+    if ( BG_MUSIC_ENABLED ) {
+        PlayMusicStream( rm.backgroundMusic );
+    }
 
 }
 
@@ -746,9 +753,9 @@ static void prepareBallData( Color *colors, bool *striped, int *numbers, bool sh
 }
 
 static void playBallHitSound( void ) {
-    PlaySound( rm.ballHits[(rm.ballHitIndex++) % rm.ballHitCount] );
+    PlaySound( rm.ballHitSounds[(rm.ballHitIndex++) % rm.ballHitCount] );
 }
 
 static void playBallCushionHitSound( void ) {
-    PlaySound( rm.ballCushionHits[(rm.ballCushionHitIndex++) % rm.ballCushionHitCount] );
+    PlaySound( rm.ballCushionHitSounds[(rm.ballCushionHitIndex++) % rm.ballCushionHitCount] );
 }
