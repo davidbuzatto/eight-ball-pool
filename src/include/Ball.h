@@ -18,3 +18,6 @@ CollisionResult ballSegmentCollision( Ball *b, Vector2 segStart, Vector2 segEnd 
 CollisionResult ballPointSweep( Ball *b, Vector2 point );
 CollisionResult ballConvexCollision( Ball *b, Vector2* vertices, int numVertices );
 CollisionResult ballCushionCollision( Ball *b, Cushion *c );
+
+void performDefaultBallPositioning( Ball *balls, int radius, Rectangle boundarie );
+void performTestBallPositioning( Ball *balls, int radius, Rectangle boundarie );

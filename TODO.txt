@@ -1,13 +1,6 @@
-Poder mover bolas com o botão direito;
-
-Criar cenários de teste;
-
+Trocar o taco por uma textura;
 Animação taco batendo na bola;
-
-Animação de destaque do jogador atual;
-
-Refatorar código:
-    Tradução para inglês nos comentários;
-    Criar os cushions baseado na posição das caçapas;
+Criar os cushions baseado na posição das caçapas;
+Tradução para inglês nos comentários;
 
 Estudar e implementar regras;

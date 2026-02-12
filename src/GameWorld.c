@@ -24,7 +24,8 @@
 #include "ResourceManager.h"
 #include "Types.h"
 
-#define SHUFFLE_BALLS true
+#define TEST_BALL_POSITIONING true
+#define SHUFFLE_BALLS false
 #define BG_MUSIC_ENABLED false
 
 #define BALL_COUNT 15
@@ -40,10 +41,20 @@ static const Color EBP_ORANGE = { .r = 255, .g = 100, .b = 0,   .a = 255 };
 static const Color EBP_GREEN  = { .r = 0,   .g = 128, .b = 0,   .a = 255 };
 static const Color EBP_BROWN  = { .r = 139, .g = 69,  .b = 19,  .a = 255 };
 
+static const Color BG_COLOR = { 28, 38, 58, 255 };
+static const Color TABLE_COLOR = { 135, 38, 8, 255 };
+static const Color SCORE_BG_COLOR = { 14, 18, 33, 255 };
+static const Color SCORE_POCKET_COLOR = { 23, 23, 27, 255 };
+
 static const int MARGIN = 100;
 static const int TABLE_MARGIN = 40;
 
-static float marksSpacing;
+static float marksSpacing = 0;
+static Ball *selectedBall = NULL;
+static Vector2 pressOffset = { 0 };
+
+static float highlighCurrentPlayerTime = 0.8f;
+static float highlighCurrentPlayerCounter = 0.0f;
 
 static void drawHud( GameWorld *gw );
 static void setupGameWorld( GameWorld *gw );
@@ -88,6 +99,27 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     }
 
     if ( gw->state == GAME_STATE_BALLS_STOPPED ) {
+
+        if ( IsMouseButtonPressed( MOUSE_BUTTON_RIGHT ) ) {
+            Vector2 mp = GetMousePosition();
+            for ( int i = 0; i <= BALL_COUNT; i++ ) {
+                Ball *b = &gw->balls[i];
+                if ( !b->pocketed && Vector2Distance( b->center, mp ) <= b->radius ) {
+                    pressOffset = Vector2Subtract( mp, b->center );
+                    selectedBall = b;
+                    break;
+                }
+            }
+        } else if ( IsMouseButtonReleased( MOUSE_BUTTON_RIGHT ) ) {
+            if ( selectedBall != NULL ) {
+                //
+            }
+            selectedBall = NULL;
+        }
+
+        if ( selectedBall != NULL ) {
+            selectedBall->center = Vector2Subtract( GetMousePosition(), pressOffset );
+        }
 
         if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
             PlaySound( rm.cueStickHitSound );
@@ -210,6 +242,11 @@ void updateGameWorld( GameWorld *gw, float delta ) {
         gw->state = GAME_STATE_BALLS_STOPPED;
     }
 
+    highlighCurrentPlayerCounter += delta;
+    if ( highlighCurrentPlayerCounter >= highlighCurrentPlayerTime ) {
+        highlighCurrentPlayerCounter = 0.0f;
+    }
+
 }
 
 /**
@@ -218,7 +255,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 void drawGameWorld( GameWorld *gw ) {
 
     BeginDrawing();
-    ClearBackground( (Color) { 28, 38, 58, 255 } );
+    ClearBackground( BG_COLOR );
 
     DrawRectangleRounded( 
         (Rectangle) {
@@ -229,7 +266,7 @@ void drawGameWorld( GameWorld *gw ) {
         },
         0.1f,
         10,
-        (Color) { 135, 38, 8, 255 }
+        TABLE_COLOR
     );
 
     DrawRectangleRoundedLines( 
@@ -304,7 +341,7 @@ void drawGameWorld( GameWorld *gw ) {
         drawBall( &gw->balls[i] );
     }
 
-    if ( gw->state == GAME_STATE_BALLS_STOPPED ) {
+    if ( gw->state == GAME_STATE_BALLS_STOPPED && selectedBall == NULL ) {
         drawCueStick( gw->currentCueStick );
     }
 
@@ -316,24 +353,57 @@ void drawGameWorld( GameWorld *gw ) {
 
 static void drawHud( GameWorld *gw ) {
     
-    int width = 16;
-    int height = 200;
+    int cueStickAngleX = GetScreenWidth() - 29;
+    int cueStickAngleY = 150;
+    int cueStickAngleRadius = 21;
+    float cueStickAngle = gw->currentCueStick->angle;
+    float cueStickAngleAntiClock = cueStickAngle <= 0 ? fabs( cueStickAngle ) : 360.0f - cueStickAngle;
 
-    int x = GetScreenWidth() - width - 20;
-    int y = GetScreenHeight() / 2 - height / 2;
+    DrawCircle( cueStickAngleX, cueStickAngleY, cueStickAngleRadius, GRAY );
+
+    DrawCircleSector( 
+        (Vector2) { 
+            cueStickAngleX, 
+            cueStickAngleY
+        },
+        cueStickAngleRadius,
+        -cueStickAngleAntiClock,
+        0,
+        30,
+        DARKGRAY
+    );
+
+    DrawCircleLines( cueStickAngleX, cueStickAngleY, cueStickAngleRadius, RAYWHITE );
+
+    const char *angleText = TextFormat( "%.2f", cueStickAngleAntiClock );
+    int wAngleText = MeasureText( angleText, 10 );
+    DrawText( angleText, cueStickAngleX - wAngleText / 2, cueStickAngleY + cueStickAngleRadius + 5, 10, WHITE );
+
+    DrawLine( 
+        cueStickAngleX, 
+        cueStickAngleY, 
+        cueStickAngleX + cueStickAngleRadius * cosf( DEG2RAD * cueStickAngle ),
+        cueStickAngleY + cueStickAngleRadius * sinf( DEG2RAD * cueStickAngle ),
+        RAYWHITE
+    );
+
+    int powerBarWidth = 16;
+    int powerBarHeight = 200;
+
+    int powerBarX = GetScreenWidth() - powerBarWidth - 21;
+    int powerBarY = GetScreenHeight() / 2 - powerBarHeight / 2 + 40;
 
     float powerP = getCueStickPowerPercentage( gw->currentCueStick );
-    float powerHeight = ( height - 4 ) * powerP;
+    float powerHeight = ( powerBarHeight - 4 ) * powerP;
     float powerHue = 120.0f - 120.0f * powerP;
 
-    DrawRectangle( x, y, width, height, BLACK );
-    DrawRectangle( x + 3, y + 3, width - 6, height - 6, RAYWHITE );
-    DrawRectangle( x + 3, y + 3 + height - 4 - powerHeight, width - 6, powerHeight, ColorFromHSV( powerHue, 1.0f, 1.0f ) );
+    DrawRectangle( powerBarX, powerBarY, powerBarWidth, powerBarHeight, BLACK );
+    DrawRectangle( powerBarX + 3, powerBarY + 3, powerBarWidth - 6, powerBarHeight - 6, RAYWHITE );
+    DrawRectangle( powerBarX + 3, powerBarY + 3 + powerBarHeight - 4 - powerHeight, powerBarWidth - 6, powerHeight, ColorFromHSV( powerHue, 1.0f, 1.0f ) );
 
-    const char *percT = TextFormat( "%.2f%%", powerP * 100 );
-    int wPercT = MeasureText( percT, 10 );
-
-    DrawText( percT, x + width / 2 - wPercT / 2, y + height + 5, 10, WHITE );
+    const char *powerText = TextFormat( "%.2f%%", powerP * 100 );
+    int wPowerText = MeasureText( powerText, 10 );
+    DrawText( powerText, powerBarX + powerBarWidth / 2 - wPowerText / 2, powerBarY + powerBarHeight + 5, 10, WHITE );
 
     DrawRectangleRounded( 
         (Rectangle) {
@@ -341,7 +411,7 @@ static void drawHud( GameWorld *gw ) {
         },
         0.4f,
         10,
-        (Color) { 14, 18, 33, 255 }
+        SCORE_BG_COLOR
     );
 
     DrawRectangleRoundedLines( 
@@ -370,7 +440,7 @@ static void drawHud( GameWorld *gw ) {
         },
         0.4f,
         10,
-        (Color) { 14, 18, 33, 255 }
+        SCORE_BG_COLOR
     );
 
     DrawRectangleRoundedLines( 
@@ -400,7 +470,7 @@ static void drawHud( GameWorld *gw ) {
             },
             0.4f,
             10,
-            RAYWHITE
+            Fade( RAYWHITE, 1.0f * ( highlighCurrentPlayerCounter / highlighCurrentPlayerTime ) )
         );
     } else {
         DrawRectangleRoundedLines( 
@@ -409,7 +479,7 @@ static void drawHud( GameWorld *gw ) {
             },
             0.4f,
             10,
-            RAYWHITE
+            Fade( RAYWHITE, 1.0f * ( highlighCurrentPlayerCounter / highlighCurrentPlayerTime ) )
         );
     }
 
@@ -418,12 +488,12 @@ static void drawHud( GameWorld *gw ) {
 
     int startScoreP1 = 65;
     int startScoreP2 = 642;
-    y = 19;
 
     // TODO: refactor
     for ( int i = 0; i < 7; i++ ) {
-        x = startScoreP1 + ( radius * 2 + spacing ) * i;
-        DrawCircle( x, y, radius + 2, (Color) { 23, 23, 27, 255 } );
+        int x = startScoreP1 + ( ( radius + 2 ) * 2 + spacing ) * i;
+        int y = 19;
+        DrawCircle( x, y, radius + 2, SCORE_POCKET_COLOR );
         DrawCircleLines( x, y, radius + 2, GRAY );
         if ( i < gw->cueStickP1.pocketedCount ) {
             int number = gw->cueStickP1.pocketedBalls[i];
@@ -439,8 +509,9 @@ static void drawHud( GameWorld *gw ) {
     }
     
     for ( int i = 0; i < 7; i++ ) {
-        x = startScoreP2 + ( radius * 2 + spacing ) * i;
-        DrawCircle( x, y, radius + 2, (Color) { 23, 23, 27, 255 } );
+        int x = startScoreP2 + ( ( radius + 2 ) * 2 + spacing ) * i;
+        int y = 19;
+        DrawCircle( x, y, radius + 2, SCORE_POCKET_COLOR );
         DrawCircleLines( x, y, radius + 2, GRAY );
         if ( i < gw->cueStickP2.pocketedCount ) {
             int number = gw->cueStickP2.pocketedBalls[i];
@@ -603,31 +674,29 @@ static void setupGameWorld( GameWorld *gw ) {
         .pocketed = false
     };
     gw->balls[0].prevPos = gw->balls[0].center;
+    
+    for ( int i = 1; i <= BALL_COUNT; i++ ) {
+        gw->balls[i] = (Ball) {
+            .center = { 0, 0 },
+            .prevPos = { 0 },
+            .radius = BALL_RADIUS,
+            .vel = { 0, 0 },
+            .friction = BALL_FRICTION,
+            .elasticity = BALL_ELASTICITY,
+            .color = colors[i-1],
+            .striped = striped[i-1],
+            .number = numbers[i-1],
+            .pocketed = false
+        };
+    }
 
-    int k = 1;
-    for ( int i = 0; i < 5; i++ ) {
-        float iniY = GetScreenHeight() / 2 - BALL_RADIUS * i;
-        for ( int j = 0; j <= i; j++ ) {
-            gw->balls[k] = (Ball) {
-                .center = { 
-                    gw->boundarie.x + gw->boundarie.width - gw->boundarie.width / 4 + ( BALL_RADIUS * 2 ) * i - 2.5f * i, 
-                    iniY + ( BALL_RADIUS * 2 ) * j + 0.5f * j
-                },
-                .prevPos = { 0 },
-                .radius = BALL_RADIUS,
-                .vel = { 0, 0 },
-                .friction = BALL_FRICTION,
-                .elasticity = BALL_ELASTICITY,
-                .color = colors[k-1],
-                .striped = striped[k-1],
-                .number = numbers[k-1],
-                .pocketed = false
-            };
-            gw->balls[k].prevPos = gw->balls[k].center;
-            k++;
-        }
+    if ( TEST_BALL_POSITIONING ) {
+        performTestBallPositioning( gw->balls, BALL_RADIUS, gw->boundarie );
+    } else {
+        performDefaultBallPositioning( gw->balls, BALL_RADIUS, gw->boundarie );
     }
     
+    int initPower = 400;
     int powerTick = 10;
     int maxPower = 1400;
 
@@ -637,7 +706,7 @@ static void setupGameWorld( GameWorld *gw ) {
         .size = 300,
         .angle = 0,
         .powerTick = powerTick,
-        .power = powerTick,
+        .power = initPower,
         .minPower = powerTick,
         .maxPower = maxPower,
         .color = { 17, 50, 102, 255 },
@@ -653,7 +722,7 @@ static void setupGameWorld( GameWorld *gw ) {
         .size = 300,
         .angle = 0,
         .powerTick = powerTick,
-        .power = powerTick,
+        .power = initPower,
         .minPower = powerTick,
         .maxPower = maxPower,
         .color = { 102, 17, 37, 255 },
@@ -729,24 +798,48 @@ static void prepareBallData( Color *colors, bool *striped, int *numbers, bool sh
     }
 
     int q = 0;
-    for ( int i = 0; i < 15; i++ ) {
-        if ( i == 4 ) {
-            colors[i] = BLACK;
-            numbers[i] = 8;
-            striped[i] = false;
-        } else if ( i == 10 ) {
-            colors[i] = solidColors[0];
-            numbers[i] = solidNumbers[0];
-            striped[i] = false;
-        } else if ( i == 14 ) {
-            colors[i] = stripeColors[0];
-            numbers[i] = stripeNumbers[0];
-            striped[i] = true;
-        } else {
-            colors[i] = colorQueue[q];
-            numbers[i] = numberQueue[q];
-            striped[i] = numbers[i] > 8;
-            q++;
+
+    if ( TEST_BALL_POSITIONING ) {
+        for ( int i = 0; i < 15; i++ ) {
+            if ( i == 7 ) {
+                colors[i] = BLACK;
+                numbers[i] = 8;
+                striped[i] = false;
+            } else if ( i == 0 ) {
+                colors[i] = solidColors[0];
+                numbers[i] = solidNumbers[0];
+                striped[i] = false;
+            } else if ( i == 8 ) {
+                colors[i] = stripeColors[0];
+                numbers[i] = stripeNumbers[0];
+                striped[i] = true;
+            } else {
+                colors[i] = colorQueue[q];
+                numbers[i] = numberQueue[q];
+                striped[i] = numbers[i] > 8;
+                q++;
+            }
+        }
+    } else {
+        for ( int i = 0; i < 15; i++ ) {
+            if ( i == 4 ) {
+                colors[i] = BLACK;
+                numbers[i] = 8;
+                striped[i] = false;
+            } else if ( i == 10 ) {
+                colors[i] = solidColors[0];
+                numbers[i] = solidNumbers[0];
+                striped[i] = false;
+            } else if ( i == 14 ) {
+                colors[i] = stripeColors[0];
+                numbers[i] = stripeNumbers[0];
+                striped[i] = true;
+            } else {
+                colors[i] = colorQueue[q];
+                numbers[i] = numberQueue[q];
+                striped[i] = numbers[i] > 8;
+                q++;
+            }
         }
     }
 

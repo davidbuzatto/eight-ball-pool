@@ -284,3 +284,44 @@ CollisionResult ballConvexCollision( Ball *b, Vector2* vertices, int numVertices
 CollisionResult ballCushionCollision( Ball *b, Cushion *c ) {
     return ballConvexCollision( b, c->vertices, 4 );
 }
+
+void performDefaultBallPositioning( Ball *balls, int radius, Rectangle boundarie ) {
+
+    int k = 1;
+    for ( int i = 0; i < 5; i++ ) {
+        float iniY = GetScreenHeight() / 2 - radius * i;
+        for ( int j = 0; j <= i; j++ ) {
+            balls[k].center = (Vector2) {
+                boundarie.x + boundarie.width - boundarie.width / 4 + ( radius * 2 ) * i - 2.5f * i, 
+                iniY + ( radius * 2 ) * j + 0.5f * j
+            };
+            balls[k].prevPos = balls[k].center;
+            k++;
+        }
+    }
+
+}
+
+void performTestBallPositioning( Ball *balls, int radius, Rectangle boundarie ) {
+
+    balls[1].center = (Vector2) { 100, 100 };
+    balls[8].center = (Vector2) { GetScreenWidth() / 2, 100 };
+    balls[2].center = (Vector2) { GetScreenWidth() - 100, 100 };
+
+    balls[9].center = (Vector2) { 100, GetScreenHeight() - 100 };
+    balls[10].center = (Vector2) { GetScreenWidth() / 2, GetScreenHeight() - 100 };
+    balls[11].center = (Vector2) { GetScreenWidth() - 100, GetScreenHeight() - 100 };
+
+    int m = 0;
+    int missing[] = { 3, 4, 5, 6, 7, 12, 13, 14, 15 };
+
+    for ( int i = 1; i <= 15; i++ ) {
+        if ( m < 9 ) {
+            int p = missing[m];
+            balls[p].center = (Vector2) { GetScreenWidth() / 2 + 30 * (m+2), GetScreenHeight() / 2 };
+            m++;
+        }
+        balls[i].prevPos = balls[i].center;
+    }
+
+}
