@@ -33,13 +33,13 @@
 #define BALL_FRICTION 0.99f
 #define BALL_ELASTICITY 0.9f
 
-static const Color EBP_YELLOW = { .r = 255, .g = 215, .b = 0,   .a = 255 };
-static const Color EBP_BLUE   = { .r = 0,   .g = 100, .b = 200, .a = 255 };
-static const Color EBP_RED    = { .r = 220, .g = 20,  .b = 60,  .a = 255 };
-static const Color EBP_PURPLE = { .r = 75,  .g = 0,   .b = 130, .a = 255 };
-static const Color EBP_ORANGE = { .r = 255, .g = 100, .b = 0,   .a = 255 };
-static const Color EBP_GREEN  = { .r = 0,   .g = 128, .b = 0,   .a = 255 };
-static const Color EBP_BROWN  = { .r = 139, .g = 69,  .b = 19,  .a = 255 };
+static const Color EBP_YELLOW = { 255, 215, 0,   255 };
+static const Color EBP_BLUE   = { 0,   100, 200, 255 };
+static const Color EBP_RED    = { 220, 20,  60,  255 };
+static const Color EBP_PURPLE = { 75,  0,   130, 255 };
+static const Color EBP_ORANGE = { 255, 100, 0,   255 };
+static const Color EBP_GREEN  = { 0,   128, 0,   255 };
+static const Color EBP_BROWN  = { 139, 69,  19,  255 };
 
 static const Color BG_COLOR = { 28, 38, 58, 255 };
 static const Color TABLE_COLOR = { 135, 38, 8, 255 };

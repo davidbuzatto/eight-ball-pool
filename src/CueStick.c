@@ -13,6 +13,8 @@
 #include "CueStick.h"
 #include "Types.h"
 
+static const Color HANDLE_COLOR = { 36, 9, 1, 255 };
+
 void updateCueStick( CueStick *cs, float delta ) {
 
     cs->angle = RAD2DEG * atan2f( GetMouseY() - cs->target.y, GetMouseX() - cs->target.x );
@@ -90,7 +92,7 @@ void drawCueStick( CueStick *cs ) {
             cs->target.y - hDist - hSize + hHandSize
         },
         5,
-        (Color) { 36, 9, 1, 255 }
+        HANDLE_COLOR
     );
 
     DrawLineV( 
