@@ -1,14 +1,13 @@
-Criar cenários de teste;
-    Poder mover bolas com o botão direito!
+Poder mover bolas com o botão direito;
 
-Estudar e implementar regras;
+Criar cenários de teste;
+
+Animação taco batendo na bola;
+
+Animação de destaque do jogador atual;
 
 Refatorar código:
     Tradução para inglês nos comentários;
     Criar os cushions baseado na posição das caçapas;
 
-Adicionar som;
-
-Ícone;
-
-Refatorações.
+Estudar e implementar regras;

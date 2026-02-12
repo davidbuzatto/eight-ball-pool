@@ -104,6 +104,9 @@ void initGameWindow( GameWindow *gameWindow ) {
             loadResourcesResourceManager();
         }
 
+        Image icon = LoadImage( "resources/images/icon.png" );
+        SetWindowIcon( icon );
+
         gameWindow->gw = createGameWorld();
 
         // game loop
@@ -115,6 +118,8 @@ void initGameWindow( GameWindow *gameWindow ) {
         if ( gameWindow->loadResources ) {
             unloadResourcesResourceManager();
         }
+
+        UnloadImage( icon );
 
         destroyGameWindow( gameWindow );
 

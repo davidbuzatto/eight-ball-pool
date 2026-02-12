@@ -13,6 +13,7 @@
 
 #include "Types.h"
 #include "Ball.h"
+#include "ResourceManager.h"
 
 void updateBall( Ball *b, float delta ) {
 
@@ -39,24 +40,30 @@ void drawBall( Ball *b ) {
         return;
     }
 
-    DrawCircleV( b->center, b->radius, b->color );
+    DrawTexturePro( 
+        rm.ballsTexture, 
+        (Rectangle) { 64 * b->number, 0, 64, 64 }, 
+        (Rectangle) { b->center.x - b->radius, b->center.y - b->radius, b->radius * 2, b->radius * 2 },
+        (Vector2) { 0 },
+        0.0f,
+        WHITE
+    );
 
-    if ( b->striped ) {
+    DrawCircleLinesV( b->center, b->radius, BLACK );
+
+    /*if ( b->striped ) {
+        DrawCircleV( b->center, b->radius, WHITE );
         DrawLineEx( 
             (Vector2) { b->center.x - b->radius, b->center.y}, 
             (Vector2) { b->center.x + b->radius, b->center.y}, 
-            4, 
-            WHITE
+            10, 
+            b->color
         );
+    } else {
+        DrawCircleV( b->center, b->radius, b->color );
     }
     
     DrawCircleLinesV( b->center, b->radius, BLACK );
-
-    /*if ( b->moving ) {
-        DrawCircleLinesV( b->center, b->radius, WHITE );
-    } else {
-        DrawCircleLinesV( b->center, b->radius, BLACK );
-    }*/
 
     if ( b->number != 0 ) {
         const char *n = TextFormat( "%d", b->number );
@@ -68,7 +75,13 @@ void drawBall( Ball *b ) {
             14, 
             b->number == 8 ? WHITE : BLACK
         );
-    }
+    }*/
+
+    /*if ( b->moving ) {
+        DrawCircleLinesV( b->center, b->radius, WHITE );
+    } else {
+        DrawCircleLinesV( b->center, b->radius, BLACK );
+    }*/
 
 }
 

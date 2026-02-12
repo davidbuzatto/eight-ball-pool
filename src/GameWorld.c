@@ -43,28 +43,12 @@ static const int TABLE_MARGIN = 40;
 
 static float marksSpacing;
 
-static Color scoreColors[] = { 
-    EBP_YELLOW, // 1
-    EBP_BLUE,   // 2
-    EBP_RED,    // 3
-    EBP_PURPLE, // 4
-    EBP_ORANGE, // ...
-    EBP_GREEN,
-    EBP_BROWN,
-    { 0, 0, 0, 255 },
-    EBP_YELLOW,
-    EBP_BLUE,
-    EBP_RED,
-    EBP_PURPLE,
-    EBP_ORANGE,
-    EBP_GREEN,
-    EBP_BROWN   // 15
-};
-
 static void drawHud( GameWorld *gw );
 static void setupGameWorld( GameWorld *gw );
 static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size );
 static void prepareBallData( Color *colors, bool *striped, int *numbers, bool shuffleBalls );
+static void playBallHitSound( void );
+static void playBallCushionHitSound( void );
 
 /**
  * @brief Creates a dinamically allocated GameWorld struct instance.
@@ -87,7 +71,10 @@ void destroyGameWorld( GameWorld *gw ) {
  */
 void updateGameWorld( GameWorld *gw, float delta ) {
 
+    UpdateMusicStream( rm.backgroundMusic );
+
     if ( IsKeyPressed( KEY_R ) ) {
+        StopMusicStream( rm.backgroundMusic );
         setupGameWorld( gw );
     }
 
@@ -99,6 +86,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     if ( gw->state == GAME_STATE_BALLS_STOPPED ) {
 
         if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
+            PlaySound( rm.cueStickHit );
             CueStick *cc = gw->currentCueStick;
             gw->cueBall->vel.x = cc->power * cosf( DEG2RAD * cc->angle );
             gw->cueBall->vel.y = cc->power * sinf( DEG2RAD * cc->angle );
@@ -134,6 +122,8 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
             if ( collision.hasCollision ) {
 
+                playBallCushionHitSound();
+
                 // puts the ball in the exact point of contact
                 Vector2 movement = Vector2Subtract( b->center, b->prevPos );
                 b->center = Vector2Add( b->prevPos, Vector2Scale( movement, collision.t ) );
@@ -160,6 +150,16 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                     continue;
                 }
                 if ( CheckCollisionCircles( b->center, b->radius, bt->center, bt->radius ) ) {
+                    if ( b == gw->cueBall ) {
+                        float speed = sqrtf( b->vel.x * b->vel.x + b->vel.y * b->vel.y );
+                        if ( speed > 400.0f ) { // 400 pixels/second
+                            PlaySound( rm.cueBallHit );
+                        } else {
+                            playBallHitSound();    
+                        }
+                    } else {
+                        playBallHitSound();
+                    }
                     resolveCollisionBallBall( b, bt );
                 }
             }
@@ -172,6 +172,8 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
             // more than 50% of ball is inside the pocket
             if ( dist < gw->pockets[j].radius - b->radius * 0.5f ) {
+
+                PlaySound( rm.ballFalling );
 
                 b->pocketed = true;
                 b->vel = (Vector2) { 0 };
@@ -408,51 +410,44 @@ static void drawHud( GameWorld *gw ) {
     }
 
     int spacing = 8;
-    int radius = BALL_RADIUS + 2;
+    int radius = BALL_RADIUS;
 
     int startScoreP1 = 65;
     int startScoreP2 = 642;
+    y = 19;
 
     // TODO: refactor
     for ( int i = 0; i < 7; i++ ) {
-        int x = startScoreP1 + ( radius * 2 + spacing ) * i;
-        DrawCircle( x, 19, radius, (Color) { 23, 23, 27, 255 } );
-        DrawCircleLines( x, 19, radius, GRAY );
+        x = startScoreP1 + ( radius * 2 + spacing ) * i;
+        DrawCircle( x, y, radius + 2, (Color) { 23, 23, 27, 255 } );
+        DrawCircleLines( x, y, radius + 2, GRAY );
         if ( i < gw->cueStickP1.pocketedCount ) {
             int number = gw->cueStickP1.pocketedBalls[i];
-            DrawCircle( x, 19, radius - 2, scoreColors[number-1] );
-            if ( number > 8 ) {
-                DrawLineEx( 
-                    (Vector2) { x - radius + 2, 19 }, 
-                    (Vector2) { x + radius - 2, 19 }, 
-                    4, 
-                    WHITE
-                );
-            }
-            const char *numberText = TextFormat( "%d", number );
-            int w = MeasureText( numberText, 14 );
-            DrawText( numberText, x - w / 2, 13, 14, BLACK );
+            DrawTexturePro( 
+                rm.ballsTexture, 
+                (Rectangle) { 64 * number, 0, 64, 64 }, 
+                (Rectangle) { x - radius, y - radius, radius * 2, radius * 2 },
+                (Vector2) { 0 },
+                0.0f,
+                WHITE
+            );
         }
     }
     
     for ( int i = 0; i < 7; i++ ) {
-        int x = startScoreP2 + ( radius * 2 + spacing ) * i;
-        DrawCircle( x, 19, radius, (Color) { 23, 23, 27, 255 } );
-        DrawCircleLines( x, 19, radius, GRAY );
+        x = startScoreP2 + ( radius * 2 + spacing ) * i;
+        DrawCircle( x, y, radius + 2, (Color) { 23, 23, 27, 255 } );
+        DrawCircleLines( x, y, radius + 2, GRAY );
         if ( i < gw->cueStickP2.pocketedCount ) {
             int number = gw->cueStickP2.pocketedBalls[i];
-            DrawCircle( x, 19, radius - 2, scoreColors[number-1] );
-            if ( number > 8 ) {
-                DrawLineEx( 
-                    (Vector2) { x - radius + 2, 19 }, 
-                    (Vector2) { x + radius - 2, 19 }, 
-                    4, 
-                    WHITE
-                );
-            }
-            const char *numberText = TextFormat( "%d", number );
-            int w = MeasureText( numberText, 14 );
-            DrawText( numberText, x - w / 2, 13, 14, BLACK );
+            DrawTexturePro( 
+                rm.ballsTexture, 
+                (Rectangle) { 64 * number, 0, 64, 64 }, 
+                (Rectangle) { x - radius, y - radius, radius * 2, radius * 2 },
+                (Vector2) { 0 },
+                0.0f,
+                WHITE
+            );
         }
     }
 
@@ -667,6 +662,7 @@ static void setupGameWorld( GameWorld *gw ) {
     gw->currentCueStick = &gw->cueStickP1;
 
     gw->state = GAME_STATE_BALLS_STOPPED;
+    PlayMusicStream( rm.backgroundMusic );
 
 }
 
@@ -747,4 +743,12 @@ static void prepareBallData( Color *colors, bool *striped, int *numbers, bool sh
         }
     }
 
+}
+
+static void playBallHitSound( void ) {
+    PlaySound( rm.ballHits[(rm.ballHitIndex++) % rm.ballHitCount] );
+}
+
+static void playBallCushionHitSound( void ) {
+    PlaySound( rm.ballCushionHits[(rm.ballCushionHitIndex++) % rm.ballCushionHitCount] );
 }

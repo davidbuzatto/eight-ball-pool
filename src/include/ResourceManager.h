@@ -9,10 +9,27 @@
 
 #include "raylib/raylib.h"
 
+#define BALL_HIT_COUNT 10
+#define BALL_CUSHION_HIT_COUNT 10
+
 typedef struct ResourceManager {
-    Texture2D textureExample;
-    Sound soundExample;
-    Music musicExample;
+
+    Texture2D ballsTexture;
+
+    Music backgroundMusic;
+    
+    Sound ballFalling;
+    Sound cueBallHit;
+    Sound cueStickHit;
+
+    Sound ballHits[BALL_HIT_COUNT];
+    int ballHitCount;
+    int ballHitIndex;
+
+    Sound ballCushionHits[BALL_CUSHION_HIT_COUNT];
+    int ballCushionHitCount;
+    int ballCushionHitIndex;
+
 } ResourceManager;
 
 /**
