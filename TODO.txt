@@ -1,4 +1,3 @@
-Animação taco batendo na bola;
 Criar os cushions baseado na posição das caçapas;
 Tradução para inglês nos comentários;
 
