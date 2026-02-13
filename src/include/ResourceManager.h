@@ -15,6 +15,7 @@
 typedef struct ResourceManager {
 
     Texture2D ballsTexture;
+    Texture2D cueSticksTexture;
 
     Music backgroundMusic;
     

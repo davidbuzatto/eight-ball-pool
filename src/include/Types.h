@@ -15,6 +15,17 @@ typedef enum GameState {
     GAME_STATE_BALLS_MOVING
 } GameState;
 
+typedef enum CueStickType {
+    CUE_STICK_TYPE_P1,
+    CUE_STICK_TYPE_P2,
+} CueStickType;
+
+typedef enum CueStickState {
+    CUE_STICK_STATE_READY,
+    CUE_STICK_STATE_HITING,
+    CUE_STICK_STATE_HIT
+} CueStickState;
+
 typedef struct Ball {
     Vector2 center;
     Vector2 prevPos;
@@ -41,6 +52,8 @@ typedef struct CueStick {
     Color color;
     int pocketedBalls[7];
     int pocketedCount;
+    CueStickType type;
+    CueStickState state;
 } CueStick;
 
 typedef struct Cushion {

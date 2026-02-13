@@ -24,8 +24,8 @@
 #include "ResourceManager.h"
 #include "Types.h"
 
-#define TEST_BALL_POSITIONING true
-#define SHUFFLE_BALLS false
+#define TEST_BALL_POSITIONING false
+#define SHUFFLE_BALLS true
 #define BG_MUSIC_ENABLED false
 
 #define BALL_COUNT 15
@@ -56,10 +56,12 @@ static Vector2 pressOffset = { 0 };
 static float highlighCurrentPlayerTime = 0.8f;
 static float highlighCurrentPlayerCounter = 0.0f;
 
+static bool changeCurrentPlayer = false;
+
 static void drawHud( GameWorld *gw );
 static void setupGameWorld( GameWorld *gw );
 static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size );
-static void prepareBallData( Color *colors, bool *striped, int *numbers, bool shuffleBalls );
+static void prepareBallData( Color *colors, bool *striped, int *numbers, bool suffle );
 static void playBallHitSound( void );
 static void playBallCushionHitSound( void );
 
@@ -91,6 +93,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     if ( IsKeyPressed( KEY_R ) ) {
         StopMusicStream( rm.backgroundMusic );
         setupGameWorld( gw );
+        return;
     }
 
     // prev positions here (needed for cushion collision)
@@ -122,19 +125,21 @@ void updateGameWorld( GameWorld *gw, float delta ) {
         }
 
         if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
-            PlaySound( rm.cueStickHitSound );
-            CueStick *cc = gw->currentCueStick;
-            gw->cueBall->vel.x = cc->power * cosf( DEG2RAD * cc->angle );
-            gw->cueBall->vel.y = cc->power * sinf( DEG2RAD * cc->angle );
-            cc->power = cc->minPower;
-            if ( cc == &gw->cueStickP1 ) {
-                gw->currentCueStick = &gw->cueStickP2;
-            } else {
-                gw->currentCueStick = &gw->cueStickP1;
-            }
+            gw->currentCueStick->state = CUE_STICK_STATE_HITING;
         }
 
         updateCueStick( gw->currentCueStick, delta );
+
+        if ( gw->currentCueStick->state == CUE_STICK_STATE_HIT ) {
+            if ( gw->currentCueStick->power != 0 ) {
+                PlaySound( rm.cueStickHitSound );
+            }
+            CueStick *cc = gw->currentCueStick;
+            gw->cueBall->vel.x = cc->power * cosf( DEG2RAD * cc->angle );
+            gw->cueBall->vel.y = cc->power * sinf( DEG2RAD * cc->angle );
+            cc->state = CUE_STICK_STATE_READY;
+            changeCurrentPlayer = true;
+        }
 
     }
 
@@ -214,12 +219,11 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                 b->pocketed = true;
                 b->vel = (Vector2) { 0 };
                 b->moving = false;
-
-                // player 2 pocketed
+                
                 if ( gw->currentCueStick == &gw->cueStickP1 ) {
-                    gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
-                } else {
                     gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
+                } else {
+                    gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
                 }
 
                 break;
@@ -239,11 +243,22 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     if ( ballsMoving ) {
         gw->state = GAME_STATE_BALLS_MOVING;
     } else {
+
         gw->state = GAME_STATE_BALLS_STOPPED;
+
+        if ( changeCurrentPlayer ) {
+            if ( gw->currentCueStick == &gw->cueStickP1 ) {
+                gw->currentCueStick = &gw->cueStickP2;
+            } else {
+                gw->currentCueStick = &gw->cueStickP1;
+            }
+            changeCurrentPlayer = false;
+        }
+
     }
 
     highlighCurrentPlayerCounter += delta;
-    if ( highlighCurrentPlayerCounter >= highlighCurrentPlayerTime ) {
+    if ( highlighCurrentPlayerCounter > highlighCurrentPlayerTime ) {
         highlighCurrentPlayerCounter = 0.0f;
     }
 
@@ -373,6 +388,19 @@ static void drawHud( GameWorld *gw ) {
         DARKGRAY
     );
 
+    DrawRing( 
+        (Vector2) { 
+            cueStickAngleX, 
+            cueStickAngleY
+        },
+        5,
+        cueStickAngleRadius / 1.5,
+        -cueStickAngleAntiClock,
+        0,
+        30,
+        gw->currentCueStick->color
+    );
+
     DrawCircleLines( cueStickAngleX, cueStickAngleY, cueStickAngleRadius, RAYWHITE );
 
     const char *angleText = TextFormat( "%.2f", cueStickAngleAntiClock );
@@ -394,12 +422,12 @@ static void drawHud( GameWorld *gw ) {
     int powerBarY = GetScreenHeight() / 2 - powerBarHeight / 2 + 40;
 
     float powerP = getCueStickPowerPercentage( gw->currentCueStick );
-    float powerHeight = ( powerBarHeight - 4 ) * powerP;
+    int powerHeight = (int) ( ( powerBarHeight - 6 ) * powerP );
     float powerHue = 120.0f - 120.0f * powerP;
 
     DrawRectangle( powerBarX, powerBarY, powerBarWidth, powerBarHeight, BLACK );
     DrawRectangle( powerBarX + 3, powerBarY + 3, powerBarWidth - 6, powerBarHeight - 6, RAYWHITE );
-    DrawRectangle( powerBarX + 3, powerBarY + 3 + powerBarHeight - 4 - powerHeight, powerBarWidth - 6, powerHeight, ColorFromHSV( powerHue, 1.0f, 1.0f ) );
+    DrawRectangle( powerBarX + 3, powerBarY + 3 + powerBarHeight - 6 - powerHeight, powerBarWidth - 6, powerHeight, ColorFromHSV( powerHue, 1.0f, 1.0f ) );
 
     const char *powerText = TextFormat( "%.2f%%", powerP * 100 );
     int wPowerText = MeasureText( powerText, 10 );
@@ -707,13 +735,15 @@ static void setupGameWorld( GameWorld *gw ) {
         .angle = 0,
         .powerTick = powerTick,
         .power = initPower,
-        .minPower = powerTick,
+        .minPower = 0,
         .maxPower = maxPower,
         .color = { 17, 50, 102, 255 },
         .pocketedBalls = { 0 },
-        .pocketedCount = 0
+        .pocketedCount = 0,
         /*.pocketedBalls = { 1, 2, 3, 4, 5, 6, 7 },
-        .pocketedCount = 7*/
+        .pocketedCount = 7,*/
+        .type = CUE_STICK_TYPE_P1,
+        .state = CUE_STICK_STATE_READY
     };
 
     gw->cueStickP2 = (CueStick) {
@@ -723,18 +753,20 @@ static void setupGameWorld( GameWorld *gw ) {
         .angle = 0,
         .powerTick = powerTick,
         .power = initPower,
-        .minPower = powerTick,
+        .minPower = 0,
         .maxPower = maxPower,
         .color = { 102, 17, 37, 255 },
         .pocketedBalls = { 0 },
-        .pocketedCount = 0
+        .pocketedCount = 0,
         /*.pocketedBalls = { 9, 10, 11, 12, 13, 14, 15 },
-        .pocketedCount = 7*/
+        .pocketedCount = 7,*/
+        .type = CUE_STICK_TYPE_P2,
+        .state = CUE_STICK_STATE_READY
     };
 
     gw->currentCueStick = &gw->cueStickP1;
-
     gw->state = GAME_STATE_BALLS_STOPPED;
+    changeCurrentPlayer = false;
 
     if ( BG_MUSIC_ENABLED ) {
         PlayMusicStream( rm.backgroundMusic );
@@ -754,7 +786,7 @@ static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size ) {
     }
 }
 
-static void prepareBallData( Color *colors, bool *striped, int *numbers, bool shuffleBalls ) {
+static void prepareBallData( Color *colors, bool *striped, int *numbers, bool suffle ) {
 
     Color solidColors[] = {
         EBP_YELLOW,
@@ -778,7 +810,7 @@ static void prepareBallData( Color *colors, bool *striped, int *numbers, bool sh
     };
     int stripeNumbers[] = { 9, 10, 11, 12, 13, 14, 15 };
 
-    if ( shuffleBalls ) {
+    if ( suffle ) {
         shuffleColorsAndNumbers( solidColors, solidNumbers, 7 );
         shuffleColorsAndNumbers( stripeColors, stripeNumbers, 7 );
     }
@@ -793,7 +825,7 @@ static void prepareBallData( Color *colors, bool *striped, int *numbers, bool sh
         numberQueue[i+5] = stripeNumbers[i];
     }
 
-    if ( shuffleBalls ) {
+    if ( suffle ) {
         shuffleColorsAndNumbers( colorQueue, numberQueue, 12 );
     }
 
