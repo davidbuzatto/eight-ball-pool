@@ -1,0 +1,59 @@
+Regras do Jogo de Bilhar Bola 8
+
+Configuração Inicial
+
+A mesa começa com 15 bolas numeradas (1 a 15) dispostas em triângulo, com a bola 8 no centro. A bola branca (cue ball) é posicionada atrás da linha de saque. As bolas são divididas em dois grupos: lisas (1-7) e listradas (9-15).
+
+
+Início do Jogo
+
+Quebra (Break): O jogador deve acertar o triângulo com a bola branca. Para a quebra ser válida, pelo menos 4 bolas devem tocar as tabelas ou alguma bola deve ser encaçapada. Se a quebra for inválida, o adversário pode aceitar a mesa como está ou pedir nova quebra.
+
+Definição dos grupos: Os grupos (lisas ou listradas) são definidos pela primeira bola legalmente encaçapada após a quebra (não conta bola encaçapada na quebra se nenhum grupo foi escolhido ainda).
+
+
+Jogadas
+
+Sequência: O jogador continua jogando enquanto encaçapar bolas do seu grupo legalmente. Quando erra ou comete falta, passa a vez.
+
+Tiro legal: O jogador deve sempre acertar primeiro uma bola do seu grupo com a bola branca. Após o contato, qualquer bola (incluindo a branca) deve tocar uma tabela OU alguma bola deve ser encaçapada.
+
+Bola 8: Só pode ser encaçapada depois que o jogador encaçapar todas as bolas do seu grupo. O jogador deve indicar em qual caçapa pretende encaçapar a bola 8 (call pocket).
+
+
+Faltas
+
+Quando ocorre falta, o adversário ganha "bola na mão" (pode posicionar a branca em qualquer lugar da mesa):
+    Não acertar nenhuma bola
+    Acertar primeiro uma bola que não seja do seu grupo
+    Encaçapar a bola branca (scratch)
+    Bola branca pular para fora da mesa
+    Tocar qualquer bola com a mão, roupa ou taco (exceto a branca no momento do tiro)
+    Após o contato, nenhuma bola tocar tabela e nenhuma ser encaçapada
+    Tiro enquanto bolas ainda estão em movimento
+
+
+Vitória
+
+O jogador vence quando encaçapa legalmente a bola 8 na caçapa indicada, após ter encaçapado todas as bolas do seu grupo.
+
+
+Derrota Imediata
+
+O jogador perde imediatamente se:
+    Encaçapar a bola 8 antes de encaçapar todas as bolas do seu grupo
+    Encaçapar a bola 8 na caçapa errada (diferente da indicada)
+    Encaçapar a bola 8 no mesmo tiro em que encaçapa a última bola do seu grupo
+    Derrubar a bola 8 para fora da mesa
+    Encaçapar a bola 8 em um tiro com falta
+
+
+Regras Especiais
+
+Bola 8 na quebra: Se a bola 8 for encaçapada na quebra, o jogador pode escolher reposicionar a bola 8 e continuar jogando, ou pedir nova quebra.
+
+Bola errada encaçapada: Se o jogador encaçapar uma bola do adversário, ela permanece encaçapada, mas ele perde a vez (desde que o tiro tenha sido legal).
+
+Combinação com bola 8: Antes de encaçapar todas as bolas do grupo, não é permitido usar a bola 8 como primeira bola em combinações.
+
+Push out (opcional): Logo após a quebra, o jogador seguinte pode declarar "push out" e dar um tiro sem precisar seguir as regras normais, apenas para reposicionar a branca. O adversário então escolhe se joga ou devolve a jogada.

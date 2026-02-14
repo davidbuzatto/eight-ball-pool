@@ -1,0 +1,100 @@
+Regras do Snooker
+
+Configuração Inicial
+
+A mesa tem 22 bolas: 15 bolas vermelhas (1 ponto cada), 1 amarela (2 pontos), 1 verde (3 pontos), 1 marrom (4 pontos), 1 azul (5 pontos), 1 rosa (6 pontos), 1 preta (7 pontos) e a bola branca.
+
+Posicionamento inicial:
+    15 vermelhas em triângulo próximo à marca rosa
+    Amarela: à esquerda da linha de saque (D)
+    Verde: à direita da linha de saque (D)
+    Marrom: no centro da linha de saque
+    Azul: no centro da mesa
+    Rosa: entre o triângulo de vermelhas e a azul
+    Preta: na marca superior da mesa
+    Branca: dentro do D (semicírculo) para o break
+
+
+Objetivo
+
+Acumular mais pontos que o adversário encaçapando bolas na sequência correta. O jogo termina quando todas as bolas são encaçapadas ou quando um jogador desiste.
+
+
+Sequência de Jogo
+
+Ciclo básico: O jogador deve alternar entre vermelhas e coloridas:
+    Encaçapar uma bola vermelha (1 ponto)
+    Encaçapar uma bola colorida de sua escolha (2-7 pontos)
+    A bola colorida retorna à sua marca original
+    Repetir até não haver mais vermelhas na mesa
+
+Após todas as vermelhas: As coloridas devem ser encaçapadas em ordem crescente de valor (amarela, verde, marrom, azul, rosa, preta). Essas NÃO retornam à mesa.
+
+Continuidade: O jogador continua enquanto encaçapar bolas legalmente. Quando erra ou comete falta, passa a vez.
+
+
+Tiro Legal
+
+Bola on: É a bola que deve ser acertada primeiro. Enquanto houver vermelhas, qualquer vermelha é "bola on". Após encaçapar uma vermelha, qualquer colorida é "bola on". Após acabarem as vermelhas, a próxima colorida na sequência é "bola on".
+
+Requisitos do tiro:
+    A branca deve acertar primeiro uma "bola on"
+    Não é obrigatório encaçapar, mas deve acertar a bola on primeiro
+
+
+Faltas
+
+Todas as faltas concedem no mínimo 4 pontos ao adversário (ou o valor da bola envolvida, se maior). O adversário joga de onde a branca parou ou pode pedir para o faltoso jogar novamente.
+
+Faltas comuns:
+    Não acertar nenhuma bola (4 pontos)
+    Acertar primeiro uma bola que não seja "bola on" (valor da bola ou 4, o que for maior)
+    Encaçapar a branca (4 pontos)
+    Branca ou qualquer bola pular para fora da mesa (valor da bola ou 4)
+    Tocar bola com qualquer coisa exceto a ponta do taco na branca (4 pontos)
+    Acertar a branca mais de uma vez no mesmo tiro (4 pontos)
+    Bolas ainda em movimento quando executa o tiro (4 pontos)
+    Jogar com ambos os pés fora do chão (4 pontos)
+    Encaçapar uma bola que não seja "bola on" (valor da bola ou 4)
+
+Falta e miss: Se o árbitro julgar que o jogador não tentou acertar a bola on com esforço total, pode declarar "foul and a miss". O adversário pode pedir para reposicionar as bolas e o faltoso jogar novamente.
+
+
+Pontuação
+
+Bolas encaçapadas: Vermelha = 1, Amarela = 2, Verde = 3, Marrom = 4, Azul = 5, Rosa = 6, Preta = 7
+
+Free ball: Após uma falta onde o adversário está snookered (não consegue acertar nenhuma bola on em linha reta), ele pode nomear qualquer bola como "free ball", que vale os mesmos pontos da bola on original.
+
+Máximo break: 147 pontos (15 vermelhas + 15 pretas + todas as coloridas na ordem final)
+
+
+Snooker
+
+Um jogador está "snookered" quando não consegue acertar ambas as extremidades de nenhuma bola on em linha reta. Se foi causado por falta do adversário, ganha free ball.
+
+
+Reposicionamento de Bolas
+
+Coloridas durante o jogo: Quando encaçapadas enquanto ainda há vermelhas, retornam às suas marcas originais. Se a marca está ocupada, vai para a marca disponível de maior valor. Se todas ocupadas, fica o mais próximo possível da sua marca original em direção à cabeceira da mesa.
+
+Bola encaçapada incorretamente: Se uma bola que não era "bola on" for encaçapada em um tiro legal (por exemplo, encaçapa vermelha e colorida no mesmo tiro), a colorida retorna à mesa.
+
+
+Vitória
+
+O jogador com mais pontos quando todas as bolas são encaçapadas vence. Se houver empate após a bola preta final, ela é reposicionada e o primeiro a encaçapá-la (ou o adversário cometer falta) vence.
+
+
+Desistência
+
+Um jogador pode desistir se acreditar que não pode mais vencer. Também pode conceder o frame se deixar o adversário em posição muito vantajosa.
+
+
+Regras Especiais
+
+Touching ball: Se a branca está encostada em uma bola, o jogador deve jogar para longe dela sem movê-la. Se for uma bola on, considera-se que já a acertou.
+
+Jump shot: É falta fazer a branca pular sobre outra bola (exceto se pular naturalmente após acertar a bola on).
+
+Push shot: Manter contato entre taco, branca e bola objeto simultaneamente é falta.

@@ -1,0 +1,66 @@
+Outros Jogos de Caçapa Populares
+
+Existem vários jogos de caçapa bastante jogados:
+
+
+Bola 9 (Nine-ball)
+
+Usa apenas as bolas 1 a 9 mais a branca. O objetivo é encaçapar a bola 9, mas você deve sempre acertar a bola de menor número na mesa primeiro. Se encaçapar a bola 9 em qualquer momento (desde que tenha acertado a bola correta primeiro), você vence. É muito popular em torneios profissionais porque os jogos são mais rápidos que o bola 8.
+
+
+Bola 10 (Ten-ball)
+
+Similar ao bola 9, mas usa bolas 1 a 10. A diferença é que você precisa "cantar" (declarar) a caçapa onde vai encaçapar a bola 10. É considerado mais técnico que o bola 9.
+
+
+Sinuca Brasileira
+
+Esse provavelmente é o que você viu com bolas vermelhas e amarelas! Usa 15 bolas vermelhas, 1 branca e 6 coloridas (amarela, verde, marrom, azul, rosa, preta). As regras são parecidas com snooker mas simplificadas. Você encaçapa vermelhas alternando com coloridas, mas há diferenças na pontuação e nas regras de falta.
+
+
+Bola 14.1 / Straight Pool
+
+Usa todas as 15 bolas numeradas. Você deve "cantar" cada bola (dizer qual bola e em qual caçapa vai encaçapar). Cada bola vale 1 ponto. O jogo continua até alguém atingir um número predeterminado de pontos (geralmente 100 ou 150). Quando restam poucas bolas, elas são reorganizadas.
+
+
+Bola 3 (Three-ball)
+
+Usa apenas as bolas 1, 2 e 3. O objetivo é encaçapar as três bolas no menor número de tacadas possível. É um jogo de apostas muito popular.
+
+
+Rotação
+
+Usa todas as 15 bolas. Você deve sempre acertar a bola de menor número primeiro, e cada bola vale seu número em pontos. Quem fizer mais pontos vence (total possível é 120 pontos).
+
+
+One Pocket
+
+Usa todas as 15 bolas, mas cada jogador tem apenas UMA caçapa designada (geralmente as duas caçapas dos cantos de um mesmo lado). Você só pontua encaçapando bolas na sua caçapa. Bolas encaçapadas em outras caçapas são recolocadas na mesa. É um jogo muito estratégico e defensivo.
+
+
+Bank Pool
+
+Usa todas as 15 bolas ou apenas a bola 9. A regra especial é que você só pode encaçapar bolas fazendo-as bater em pelo menos uma tabela antes de entrar na caçapa (daí o nome "bank" = tabela).
+
+
+Cowboy / Pill Pool
+
+Cada jogador sorteia secretamente um número (uma "pílula" numerada). Você precisa encaçapar a bola correspondente ao seu número sorteado. Ninguém sabe qual bola os outros precisam encaçapar.
+
+
+Cutthroat
+
+Jogo para 3 jogadores. As bolas são divididas: jogador 1 fica com 1-5, jogador 2 com 6-10, jogador 3 com 11-15. O objetivo é encaçapar as bolas dos ADVERSÁRIOS. O último jogador com bolas na mesa vence.
+
+
+Blackball / Pool Inglês
+
+Muito popular na Europa, especialmente Reino Unido. Usa 7 bolas vermelhas, 7 amarelas e a bola preta (similar ao conceito do bola 8, mas com cores diferentes e algumas regras distintas). As mesas são menores e as caçapas mais apertadas.
+
+
+Artistic Pool
+
+Não é exatamente um jogo competitivo tradicional, mas uma modalidade onde os jogadores executam tacadas de truque predefinidas, ganhando pontos pela dificuldade e execução.
+
+
+Os mais comuns para você considerar implementar depois do bola 8 seriam o bola 9 (muito popular profissionalmente), sinuca brasileira (muito jogado no Brasil), e one pocket (favorito de muitos puristas do bilhar). O bola 9 seria o mais fácil de implementar já que usa menos bolas e regras mais simples que o bola 8.
