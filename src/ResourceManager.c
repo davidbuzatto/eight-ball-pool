@@ -19,6 +19,7 @@ void loadResourcesResourceManager( void ) {
 
     rm.ballsTexture = LoadTexture( "resources/images/balls3.png" );
     rm.cueSticksTexture = LoadTexture( "resources/images/cue-sticks.png" );
+    rm.musicIconsTexture = LoadTexture( "resources/images/music-icons.png" );
     
     rm.backgroundMusic = LoadMusicStream( "resources/musics/jazz-background-music.mp3" );
     rm.backgroundMusic.looping = true;
@@ -47,6 +48,7 @@ void unloadResourcesResourceManager( void ) {
 
     UnloadTexture( rm.ballsTexture );
     UnloadTexture( rm.cueSticksTexture );
+    UnloadTexture( rm.musicIconsTexture );
     
     StopMusicStream( rm.backgroundMusic );
     UnloadMusicStream( rm.backgroundMusic );

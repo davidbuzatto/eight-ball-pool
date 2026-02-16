@@ -11,9 +11,17 @@
 #include "raylib/raylib.h"
 
 typedef enum GameState {
+    GAME_STATE_BREAKING,
+    GAME_STATE_OPEN_TABLE,
+    GAME_STATE_PLAYING,
+    GAME_STATE_BALL_IN_HAND,
+    GAME_STATE_GAME_OVER
+} GameState;
+
+typedef enum GameBallsState {
     GAME_STATE_BALLS_STOPPED,
     GAME_STATE_BALLS_MOVING
-} GameState;
+} GameBallsState;
 
 typedef enum CueStickType {
     CUE_STICK_TYPE_P1,
@@ -66,6 +74,7 @@ typedef struct Pocket {
 } Pocket;
 
 typedef struct GameWorld {
+
     Rectangle boundarie;
     Cushion cushions[6];
     Pocket pockets[6];
@@ -75,6 +84,20 @@ typedef struct GameWorld {
     CueStick cueStickP2;
     CueStick *currentCueStick;
     GameState state;
+    GameBallsState ballsState;
+
+    // for HUD
+    int pocketedBalls[15];
+    int pocketedCount;
+
+    // statistics for game flow control
+    int cueBallCushionHits;   // remove?
+    int cueBallHits;
+    int ballCushionHits;      // remove?
+    int ballsPocketed;
+    bool cueBallPocketed;
+    bool ballsTouchedCushion[16];
+
 } GameWorld;
 
 typedef struct CollisionResult {

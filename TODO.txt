@@ -1,4 +1,4 @@
-Criar os cushions baseado na posição das caçapas;
-Tradução para inglês nos comentários;
-
+Efeito na bola;
+Mostrar tragetórias;
 Estudar e implementar regras;
+Tradução para inglês nos comentários;

@@ -6,9 +6,10 @@
  * @copyright Copyright (c) 2026
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
+#include <string.h>
 
 #include "raylib/raylib.h"
 #include "raylib/raymath.h"
@@ -26,12 +27,15 @@
 
 #define TEST_BALL_POSITIONING false
 #define SHUFFLE_BALLS true
+#define SHOW_DEBUG_INFO false
 #define BG_MUSIC_ENABLED false
 
 #define BALL_COUNT 15
 #define BALL_RADIUS 10
 #define BALL_FRICTION 0.99f
 #define BALL_ELASTICITY 0.9f
+
+#define trace( ... ) TraceLog( LOG_INFO, __VA_ARGS__ );
 
 static const Color EBP_YELLOW = { 255, 215, 0,   255 };
 static const Color EBP_BLUE   = { 0,   100, 200, 255 };
@@ -43,6 +47,7 @@ static const Color EBP_BROWN  = { 139, 69,  19,  255 };
 
 static const Color BG_COLOR = { 28, 38, 58, 255 };
 static const Color TABLE_COLOR = { 135, 38, 8, 255 };
+static const Color TABLE_POCKETS_BALLS_SUPPORT_COLOR = { 84, 23, 4, 255 };
 static const Color SCORE_BG_COLOR = { 14, 18, 33, 255 };
 static const Color SCORE_POCKET_COLOR = { 23, 23, 27, 255 };
 
@@ -57,11 +62,24 @@ static float highlighCurrentPlayerTime = 0.8f;
 static float highlighCurrentPlayerCounter = 0.0f;
 
 static bool changeCurrentPlayer = false;
+static bool bgMusicEnabled = BG_MUSIC_ENABLED;
+
+static const char *gameStateNames[] = { 
+    "Breaking", 
+    "Open Table", 
+    "Playing", 
+    "Ball In Hand", 
+    "Game Over"
+};
 
 static void drawHud( GameWorld *gw );
+static void drawDebugInfo( GameWorld *gw );
 static void setupGameWorld( GameWorld *gw );
 static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size );
 static void prepareBallData( Color *colors, bool *striped, int *numbers, bool suffle );
+static void resetStatistics( GameWorld *gw );
+static void resetCueBallPosition( GameWorld *gw );
+static void applyRules( GameWorld *gw );
 static void playBallHitSound( void );
 static void playBallCushionHitSound( void );
 
@@ -86,7 +104,7 @@ void destroyGameWorld( GameWorld *gw ) {
  */
 void updateGameWorld( GameWorld *gw, float delta ) {
 
-    if ( BG_MUSIC_ENABLED ) {
+    if ( bgMusicEnabled ) {
         UpdateMusicStream( rm.backgroundMusic );
     }
 
@@ -96,12 +114,27 @@ void updateGameWorld( GameWorld *gw, float delta ) {
         return;
     }
 
+    if ( IsKeyPressed( KEY_M ) ) {
+        bgMusicEnabled = !bgMusicEnabled;
+        if ( bgMusicEnabled ) {
+            StopMusicStream( rm.backgroundMusic );
+            PlayMusicStream( rm.backgroundMusic );
+        }
+    }
+
+    if ( IsKeyPressed( KEY_S ) ) {
+        for ( int i = 0; i <= BALL_COUNT; i++ ) {
+            gw->balls[i].vel.x = 0;
+            gw->balls[i].vel.y = 0;
+        }
+    }
+
     // prev positions here (needed for cushion collision)
     for ( int i = 0; i <= BALL_COUNT; i++ ) {
         gw->balls[i].prevPos = gw->balls[i].center;
     }
 
-    if ( gw->state == GAME_STATE_BALLS_STOPPED ) {
+    if ( gw->ballsState == GAME_STATE_BALLS_STOPPED ) {
 
         if ( IsMouseButtonPressed( MOUSE_BUTTON_RIGHT ) ) {
             Vector2 mp = GetMousePosition();
@@ -179,6 +212,15 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                 // apply some offset to prevent continuous collision
                 b->center = Vector2Add( b->center, Vector2Scale( collision.normal, 0.1f ) );
 
+                if ( gw->cueBallHits > 0 || gw->state != GAME_STATE_BREAKING ) {
+                    gw->ballsTouchedCushion[b->number] = true;
+                    if ( b == gw->cueBall ) {
+                        gw->cueBallCushionHits++;
+                    } else {
+                        gw->ballCushionHits++;
+                    }
+                }
+
             }
 
         }
@@ -202,6 +244,9 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                         playBallHitSound();
                     }
                     resolveCollisionBallBall( b, bt );
+                    if ( b == gw->cueBall ) {
+                        gw->cueBallHits++;
+                    }
                 }
             }
         }
@@ -219,11 +264,22 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                 b->pocketed = true;
                 b->vel = (Vector2) { 0 };
                 b->moving = false;
-                
-                if ( gw->currentCueStick == &gw->cueStickP1 ) {
-                    gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
+
+                if ( b == gw->cueBall ) {
+                    gw->cueBallPocketed = true;
                 } else {
-                    gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
+
+                    if ( gw->state != GAME_STATE_BREAKING ) {
+                        if ( gw->currentCueStick == &gw->cueStickP1 ) {
+                            gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
+                        } else {
+                            gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
+                        }
+                    }
+
+                    gw->ballsPocketed++;
+                    gw->pocketedBalls[gw->pocketedCount++] = b->number;
+
                 }
 
                 break;
@@ -241,18 +297,23 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     gw->currentCueStick->target = gw->cueBall->center;
 
     if ( ballsMoving ) {
-        gw->state = GAME_STATE_BALLS_MOVING;
+        gw->ballsState = GAME_STATE_BALLS_MOVING;
     } else {
 
-        gw->state = GAME_STATE_BALLS_STOPPED;
+        gw->ballsState = GAME_STATE_BALLS_STOPPED;
 
         if ( changeCurrentPlayer ) {
+
             if ( gw->currentCueStick == &gw->cueStickP1 ) {
                 gw->currentCueStick = &gw->cueStickP2;
             } else {
                 gw->currentCueStick = &gw->cueStickP1;
             }
+
+            applyRules( gw );
+
             changeCurrentPlayer = false;
+
         }
 
     }
@@ -271,6 +332,32 @@ void drawGameWorld( GameWorld *gw ) {
 
     BeginDrawing();
     ClearBackground( BG_COLOR );
+
+    int pocketedBallsSupportWidth = BALL_RADIUS * 16 * 2;
+
+    DrawRectangleRounded( 
+        (Rectangle) {
+            gw->boundarie.x + gw->boundarie.width / 2 - pocketedBallsSupportWidth / 2,
+            gw->boundarie.y + TABLE_MARGIN + gw->boundarie.height - 20,
+            pocketedBallsSupportWidth,
+            60
+        },
+        0.5f,
+        10,
+        TABLE_POCKETS_BALLS_SUPPORT_COLOR
+    );
+
+    DrawRectangleRoundedLines( 
+        (Rectangle) {
+            gw->boundarie.x + gw->boundarie.width / 2 - pocketedBallsSupportWidth / 2,
+            gw->boundarie.y + TABLE_MARGIN + gw->boundarie.height - 20,
+            pocketedBallsSupportWidth,
+            60
+        },
+        0.5f,
+        10,
+        BLACK
+    );
 
     DrawRectangleRounded( 
         (Rectangle) {
@@ -356,11 +443,15 @@ void drawGameWorld( GameWorld *gw ) {
         drawBall( &gw->balls[i] );
     }
 
-    if ( gw->state == GAME_STATE_BALLS_STOPPED && selectedBall == NULL ) {
+    if ( gw->ballsState == GAME_STATE_BALLS_STOPPED && selectedBall == NULL ) {
         drawCueStick( gw->currentCueStick );
     }
 
     drawHud( gw );
+
+    if ( SHOW_DEBUG_INFO ) {
+        drawDebugInfo( gw );
+    }
 
     EndDrawing();
 
@@ -369,7 +460,7 @@ void drawGameWorld( GameWorld *gw ) {
 static void drawHud( GameWorld *gw ) {
     
     int cueStickAngleX = GetScreenWidth() - 29;
-    int cueStickAngleY = 150;
+    int cueStickAngleY = 120;
     int cueStickAngleRadius = 21;
     float cueStickAngle = gw->currentCueStick->angle;
     float cueStickAngleAntiClock = cueStickAngle <= 0 ? fabs( cueStickAngle ) : 360.0f - cueStickAngle;
@@ -419,7 +510,7 @@ static void drawHud( GameWorld *gw ) {
     int powerBarHeight = 200;
 
     int powerBarX = GetScreenWidth() - powerBarWidth - 21;
-    int powerBarY = GetScreenHeight() / 2 - powerBarHeight / 2 + 40;
+    int powerBarY = GetScreenHeight() / 2 - powerBarHeight / 2 + 5;
 
     float powerP = getCueStickPowerPercentage( gw->currentCueStick );
     int powerHeight = (int) ( ( powerBarHeight - 6 ) * powerP );
@@ -517,7 +608,7 @@ static void drawHud( GameWorld *gw ) {
     int startScoreP1 = 65;
     int startScoreP2 = 642;
 
-    // TODO: refactor
+    // TODO: refactor?
     for ( int i = 0; i < 7; i++ ) {
         int x = startScoreP1 + ( ( radius + 2 ) * 2 + spacing ) * i;
         int y = 19;
@@ -552,6 +643,80 @@ static void drawHud( GameWorld *gw ) {
                 WHITE
             );
         }
+    }
+
+    int startPocketed = GetScreenWidth() / 2 - radius * 14;
+
+    for ( int i = 0; i < 15; i++ ) {
+        int x = startPocketed + ( radius * 2 ) * i;
+        int y = gw->boundarie.y + gw->boundarie.height + TABLE_MARGIN + radius * 2;
+        DrawCircle( x, y, radius, ColorBrightness( TABLE_POCKETS_BALLS_SUPPORT_COLOR, -0.5f ) );
+        DrawCircleLines( x, y, radius, BLACK );
+        if ( i < gw->pocketedCount ) {
+            int number = gw->pocketedBalls[i];
+            DrawTexturePro( 
+                rm.ballsTexture, 
+                (Rectangle) { 64 * number, 0, 64, 64 }, 
+                (Rectangle) { x - radius, y - radius, radius * 2, radius * 2 },
+                (Vector2) { 0 },
+                0.0f,
+                WHITE
+            );
+            DrawCircleLines( x, y, radius, BLACK );
+        }
+    }
+
+    int fs = 30;
+    int w = MeasureText( gameStateNames[gw->state], fs );
+
+    DrawRectangleRounded( 
+        (Rectangle) {
+            GetScreenWidth() / 2 - w / 2 - 15, 10, w + 30, 40
+        },
+        0.4f,
+        10,
+        ColorBrightness( BG_COLOR, -0.5f )
+    );
+
+    DrawRectangleRoundedLines( 
+        (Rectangle) {
+            GetScreenWidth() / 2 - w / 2 - 15, 10, w + 30, 40
+        },
+        0.4f,
+        10,
+        GRAY
+    );
+
+    DrawText( gameStateNames[gw->state], GetScreenWidth() / 2 - w / 2 + 3, 18, fs, BLACK );
+    DrawText( gameStateNames[gw->state], GetScreenWidth() / 2 - w / 2, 15, fs, GRAY );
+
+    int musicIconS = bgMusicEnabled ? 0 : 64;
+
+    DrawTexturePro( 
+        rm.musicIconsTexture, 
+        (Rectangle) { musicIconS, 0, 64, 64 }, 
+        (Rectangle) { GetScreenWidth() - 46, GetScreenHeight() - 125, 32, 32 }, 
+        (Vector2) { 0 }, 
+        0.0f,
+        Fade( WHITE, 0.5f )
+    );
+
+}
+
+static void drawDebugInfo( GameWorld *gw ) {
+
+    int y = GetScreenHeight() - 200;
+    
+    DrawRectangle( 0, y, 300, 200, Fade( WHITE, 0.5f ) );
+    DrawText( TextFormat( "cue cushion hits: %d", gw->cueBallCushionHits ), 5, y + 5, 20, BLACK );
+    DrawText( TextFormat( "cue x ball hits: %d", gw->cueBallHits ), 5, y + 25, 20, BLACK );
+    DrawText( TextFormat( "balls cushion hits: %d", gw->ballCushionHits ), 5, y + 45, 20, BLACK );
+    DrawText( TextFormat( "cue pocketed: %s", gw->cueBallPocketed ? "yes" : "no"  ), 5, y + 65, 20, BLACK );
+    DrawText( TextFormat( "balls pocketed: %d", gw->ballsPocketed ), 5, y + 85, 20, BLACK );
+    DrawText( TextFormat( "balls touched cushion:", gw->ballsPocketed ), 5, y + 105, 20, BLACK );
+
+    for ( int i = 0; i < 16; i++ ) {
+        DrawText( TextFormat( "%s", gw->ballsTouchedCushion[i] ? "y" : "n" ), 15 + 15 * i, y + 125, 20, BLACK );
     }
 
 }
@@ -765,7 +930,13 @@ static void setupGameWorld( GameWorld *gw ) {
     };
 
     gw->currentCueStick = &gw->cueStickP1;
-    gw->state = GAME_STATE_BALLS_STOPPED;
+
+    gw->state = GAME_STATE_BREAKING;
+    gw->ballsState = GAME_STATE_BALLS_STOPPED;
+    gw->pocketedCount = 0;
+
+    resetStatistics( gw );
+
     changeCurrentPlayer = false;
 
     if ( BG_MUSIC_ENABLED ) {
@@ -873,6 +1044,88 @@ static void prepareBallData( Color *colors, bool *striped, int *numbers, bool su
                 q++;
             }
         }
+    }
+
+}
+
+static void resetStatistics( GameWorld *gw ) {
+
+    gw->cueBallCushionHits = 0;
+    gw->cueBallHits = 0;
+    gw->ballCushionHits = 0;
+    gw->ballsPocketed = 0;
+    gw->cueBallPocketed = false;
+    
+    memset( gw->ballsTouchedCushion, false, sizeof( gw->ballsTouchedCushion ) );
+
+}
+
+static void resetCueBallPosition( GameWorld *gw ) {
+    gw->cueBall->center = (Vector2) { gw->boundarie.x + gw->boundarie.width / 4, GetScreenHeight() / 2 };
+    gw->cueBall->pocketed = false;
+}
+
+static int countBallsTouchedCushion( GameWorld *gw ) {
+
+    int cHits = 0 ;
+
+    for ( int i = 0; i < 16; i++ ) {
+        if ( gw->ballsTouchedCushion[i] ) {
+            cHits++;
+        }
+    }
+
+    return cHits;
+
+}
+
+static void applyRulesBreaking( GameWorld *gw ) {
+    
+    trace( "  state: breaking" );
+
+    if (
+        gw->cueBallHits > 0 &&  
+        !gw->cueBallPocketed &&
+        ( countBallsTouchedCushion( gw ) >= 4 || gw->ballsPocketed > 0 ) 
+    ) {
+        trace( "    ok" );
+        resetStatistics( gw );
+        gw->state = GAME_STATE_OPEN_TABLE;
+    } else {
+        trace( "    invalid" );
+        setupGameWorld( gw );
+    }
+
+}
+
+static void applyRulesOpenTable( GameWorld *gw ) {
+
+    trace( "  state: open table" );
+
+}
+
+static void applyRulesPlaying( GameWorld *gw ) {
+
+    trace( "  state: playing" );
+
+}
+
+static void applyRulesBallInHand( GameWorld *gw ) {
+
+    trace( "  state: ball in hand" );
+
+}
+
+static void applyRules( GameWorld *gw ) {
+
+    trace( "applying rules:" );
+
+    switch ( gw->state ) {
+        case GAME_STATE_BREAKING: applyRulesBreaking( gw ); return;
+        case GAME_STATE_OPEN_TABLE: applyRulesOpenTable( gw ); return;
+        case GAME_STATE_PLAYING: applyRulesPlaying( gw ); return;
+        case GAME_STATE_BALL_IN_HAND: applyRulesBallInHand( gw ); return;
+        default: return;
     }
 
 }
