@@ -37,6 +37,7 @@ static void applyRulesBreaking( GameWorld *gw );
 static void applyRulesOpenTable( GameWorld *gw );
 static void applyRulesPlaying( GameWorld *gw );
 static void applyRulesBallInHand( GameWorld *gw );
+static void isFault( GameWorld *gw );
 
 static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size );
 static void prepareBallData( Color *colors, bool *striped, int *numbers, bool suffle );
@@ -96,6 +97,23 @@ static void applyRulesBallInHand( GameWorld *gw ) {
 
 }
 
+static void isFault( GameWorld *gw ) {
+
+    //Quando ocorre falta, o adversário ganha "bola na mão" (pode posicionar a branca em qualquer lugar da mesa):
+    //Não acertar nenhuma bola
+    //Acertar primeiro uma bola que não seja do seu grupo
+    //Encaçapar a bola branca (scratch)
+    //Bola branca pular para fora da mesa
+    //Tocar qualquer bola com a mão, roupa ou taco (exceto a branca no momento do tiro)
+    //Após o contato, nenhuma bola tocar tabela e nenhuma ser encaçapada
+    //Tiro enquanto bolas ainda estão em movimento
+
+    
+
+
+
+
+}
 
 void setupEBP( GameWorld *gw ) {
 

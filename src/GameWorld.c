@@ -39,7 +39,6 @@ static Vector2 pressOffset = { 0 };
 static float highlighCurrentPlayerTime = 0.8f;
 static float highlighCurrentPlayerCounter = 0.0f;
 
-static bool changeCurrentPlayer = false;
 static bool bgMusicEnabled = BG_MUSIC_ENABLED;
 
 static const char *gameStateNames[] = { 
@@ -150,7 +149,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
             gw->cueBall->spin.y = cc->hitPoint.y * 2.0f; // top/back spin
 
             cc->state = CUE_STICK_STATE_READY;
-            changeCurrentPlayer = true;
+            gw->changeCurrentPlayer = true;
 
         }
 
@@ -302,7 +301,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
         gw->ballsState = GAME_STATE_BALLS_STOPPED;
 
-        if ( changeCurrentPlayer ) {
+        if ( gw->changeCurrentPlayer ) {
 
             if ( gw->currentCueStick == &gw->cueStickP1 ) {
                 gw->currentCueStick = &gw->cueStickP2;
@@ -312,7 +311,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
             applyRulesEBP( gw );
 
-            changeCurrentPlayer = false;
+            gw->changeCurrentPlayer = false;
 
         }
 

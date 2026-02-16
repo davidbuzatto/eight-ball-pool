@@ -100,8 +100,10 @@ typedef struct GameWorld {
     bool cueBallPocketed;
     bool ballsTouchedCushion[16];
 
-    //
+    // drawing data
     int marksSpacing;
+
+    // game logic
     bool changeCurrentPlayer;
 
 } GameWorld;
