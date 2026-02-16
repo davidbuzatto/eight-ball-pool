@@ -1,0 +1,16 @@
+#pragma once
+
+#define MARGIN 100
+#define TABLE_MARGIN 40
+
+#define TEST_BALL_POSITIONING false
+#define SHUFFLE_BALLS true
+#define SHOW_DEBUG_INFO false
+#define BG_MUSIC_ENABLED false
+
+#define BALL_COUNT 15
+#define BALL_RADIUS 10
+#define BALL_FRICTION 0.99f
+#define BALL_ELASTICITY 0.9f
+
+#define trace( ... ) TraceLog( LOG_INFO, __VA_ARGS__ );
