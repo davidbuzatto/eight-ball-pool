@@ -1,4 +1,3 @@
-Efeito na bola;
-Mostrar tragetórias;
 Estudar e implementar regras;
+Efeito na bola -> testar mais;
 Tradução para inglês nos comentários;

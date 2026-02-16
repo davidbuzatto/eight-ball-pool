@@ -23,10 +23,13 @@ void updateBall( Ball *b, float delta ) {
     b->vel.x *= b->friction;
     b->vel.y *= b->friction;
 
+    b->spin.x *= 0.98f;
+    b->spin.y *= 0.98f;
+
     float speed = sqrtf( b->vel.x * b->vel.x + b->vel.y * b->vel.y );
     if ( speed < 0.5f ) {  // less than 0.5 pixels/second
-        b->vel.x = 0;
-        b->vel.y = 0;
+        b->vel = (Vector2) { 0, 0 };
+        b->spin = (Vector2) { 0, 0 };
         b->moving = false;
     } else {
         b->moving = true;

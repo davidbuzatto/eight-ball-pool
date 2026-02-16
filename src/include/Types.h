@@ -37,6 +37,7 @@ typedef enum CueStickState {
 typedef struct Ball {
     Vector2 center;
     Vector2 prevPos;
+    Vector2 spin;      // ball spin, spin.x = side spin, spin.y = top/back spin
     int radius;
     Vector2 vel;
     float friction;
@@ -57,6 +58,7 @@ typedef struct CueStick {
     int power;
     int minPower;
     int maxPower;
+    Vector2 hitPoint;    // point of impact, -1 to 1 (0,0 = center)
     Color color;
     int pocketedBalls[7];
     int pocketedCount;

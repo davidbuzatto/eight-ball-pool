@@ -40,6 +40,26 @@ void updateCueStick( CueStick *cs, float delta ) {
             cs->power = cs->maxPower;
         }
 
+        if ( IsKeyDown( KEY_LEFT ) ) {
+            cs->hitPoint.x = fmaxf( cs->hitPoint.x - 0.5f * delta, -1.0f );
+        }
+
+        if ( IsKeyDown( KEY_RIGHT ) ) {
+            cs->hitPoint.x = fminf( cs->hitPoint.x + 0.5f * delta, 1.0f );
+        }
+
+        if ( IsKeyDown( KEY_UP ) ) {
+            cs->hitPoint.y = fmaxf( cs->hitPoint.y - 0.5f * delta, -1.0f );
+        }
+
+        if ( IsKeyDown( KEY_DOWN ) ) {
+            cs->hitPoint.y = fminf( cs->hitPoint.y + 0.5f * delta, 1.0f );
+        }
+
+        if ( IsKeyPressed( KEY_SPACE ) ) {
+            cs->hitPoint = (Vector2) { 0, 0 };
+        }
+
     } else if ( cs->state == CUE_STICK_STATE_HITING ) {
 
         hitAnimationCounter += delta;

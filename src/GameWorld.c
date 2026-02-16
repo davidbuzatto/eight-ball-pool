@@ -164,14 +164,22 @@ void updateGameWorld( GameWorld *gw, float delta ) {
         updateCueStick( gw->currentCueStick, delta );
 
         if ( gw->currentCueStick->state == CUE_STICK_STATE_HIT ) {
+
             if ( gw->currentCueStick->power != 0 ) {
                 PlaySound( rm.cueStickHitSound );
             }
+
             CueStick *cc = gw->currentCueStick;
             gw->cueBall->vel.x = cc->power * cosf( DEG2RAD * cc->angle );
             gw->cueBall->vel.y = cc->power * sinf( DEG2RAD * cc->angle );
+
+            // applies the spin based on the point of impact
+            gw->cueBall->spin.x = cc->hitPoint.x * 2.0f; // side spin
+            gw->cueBall->spin.y = cc->hitPoint.y * 2.0f; // top/back spin
+
             cc->state = CUE_STICK_STATE_READY;
             changeCurrentPlayer = true;
+
         }
 
     }
@@ -206,7 +214,27 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                 float dotProduct = Vector2DotProduct( b->vel, collision.normal );
                 b->vel = Vector2Subtract( b->vel, Vector2Scale( collision.normal, 2.0f * dotProduct ) ); 
 
-                // aplies elasticity
+                // spin on reflection
+                if ( b == gw->cueBall && Vector2Length( b->spin ) > 0.01f ) {
+
+                    bool isVertical = fabs( collision.normal.x ) > fabs( collision.normal.y );
+
+                    if ( isVertical ) {
+                        // vertical cushion, spin.x affects angle
+                        float spinEffect = b->spin.x * 0.3f; // influence factor
+                        b->vel.y += spinEffect * fabs( b->vel.x );
+                    } else {
+                        // horizontal cushion, spin.y affects angle
+                        float spinEffect = b->spin.y * 0.3f; // influence factor
+                        b->vel.x += spinEffect * fabs( b->vel.y );
+                    }
+
+                    // decrease spin after collision
+                    b->spin = Vector2Scale( b->spin, 0.7f );
+
+                }
+
+                // applies elasticity
                 b->vel = Vector2Scale( b->vel, b->elasticity );
 
                 // apply some offset to prevent continuous collision
@@ -460,7 +488,7 @@ void drawGameWorld( GameWorld *gw ) {
 static void drawHud( GameWorld *gw ) {
     
     int cueStickAngleX = GetScreenWidth() - 29;
-    int cueStickAngleY = 120;
+    int cueStickAngleY = 105;
     int cueStickAngleRadius = 21;
     float cueStickAngle = gw->currentCueStick->angle;
     float cueStickAngleAntiClock = cueStickAngle <= 0 ? fabs( cueStickAngle ) : 360.0f - cueStickAngle;
@@ -506,11 +534,63 @@ static void drawHud( GameWorld *gw ) {
         RAYWHITE
     );
 
+
+    int cueStickHitPointX = GetScreenWidth() - 29;
+    int cueStickHitPointY = 175;
+    int cueStickHitPointRadius = 21;
+
+    DrawCircle( cueStickHitPointX, cueStickHitPointY, cueStickHitPointRadius, RAYWHITE );
+    DrawCircleLines( cueStickHitPointX, cueStickHitPointY, cueStickHitPointRadius, BLACK );
+
+    float hitPointDistance = sqrtf( 
+        gw->currentCueStick->hitPoint.x * gw->currentCueStick->hitPoint.x +
+        gw->currentCueStick->hitPoint.y * gw->currentCueStick->hitPoint.y
+    );
+
+    // normalize if the distance if greater than 1
+    float nX = gw->currentCueStick->hitPoint.x;
+    float nY = gw->currentCueStick->hitPoint.y;
+
+    if ( hitPointDistance > 1.0f ) {
+        nX /= hitPointDistance;
+        nY /= hitPointDistance;
+    }
+
+    // mapping to the circle with some margin
+    float maxRadius = cueStickHitPointRadius * 0.85f; // margin of 10%
+
+    Vector2 hitPointP = {
+        cueStickHitPointX + nX * maxRadius,
+        cueStickHitPointY + nY * maxRadius
+    };
+
+    DrawCircleV( hitPointP, 4, RED );
+
+    DrawLine( 
+        cueStickHitPointX - cueStickAngleRadius, 
+        cueStickHitPointY, 
+        cueStickHitPointX + cueStickAngleRadius,
+        cueStickHitPointY, 
+        Fade( BLACK, 0.2f )
+    );
+
+    DrawLine( 
+        cueStickHitPointX, 
+        cueStickHitPointY - cueStickAngleRadius, 
+        cueStickHitPointX, 
+        cueStickHitPointY + cueStickAngleRadius,
+        Fade( BLACK, 0.2f )
+    );
+
+    DrawCircleLines( cueStickHitPointX, cueStickHitPointY, cueStickHitPointRadius / 2 + 1, Fade( BLACK, 0.2f ) );
+
+
+
     int powerBarWidth = 16;
     int powerBarHeight = 200;
 
     int powerBarX = GetScreenWidth() - powerBarWidth - 21;
-    int powerBarY = GetScreenHeight() / 2 - powerBarHeight / 2 + 5;
+    int powerBarY = GetScreenHeight() / 2 - powerBarHeight / 2 + 35;
 
     float powerP = getCueStickPowerPercentage( gw->currentCueStick );
     int powerHeight = (int) ( ( powerBarHeight - 6 ) * powerP );
@@ -695,7 +775,7 @@ static void drawHud( GameWorld *gw ) {
     DrawTexturePro( 
         rm.musicIconsTexture, 
         (Rectangle) { musicIconS, 0, 64, 64 }, 
-        (Rectangle) { GetScreenWidth() - 46, GetScreenHeight() - 125, 32, 32 }, 
+        (Rectangle) { GetScreenWidth() - 46, GetScreenHeight() - 110, 32, 32 }, 
         (Vector2) { 0 }, 
         0.0f,
         Fade( WHITE, 0.5f )
@@ -857,6 +937,7 @@ static void setupGameWorld( GameWorld *gw ) {
     gw->cueBall = &gw->balls[0];
     gw->balls[0] = (Ball) {
         .center = { gw->boundarie.x + gw->boundarie.width / 4, GetScreenHeight() / 2 },
+        .spin = { 0, 0 },
         .radius = BALL_RADIUS,
         .vel = { 0, 0 },
         .friction = BALL_FRICTION,
@@ -871,6 +952,7 @@ static void setupGameWorld( GameWorld *gw ) {
     for ( int i = 1; i <= BALL_COUNT; i++ ) {
         gw->balls[i] = (Ball) {
             .center = { 0, 0 },
+            .spin = { 0, 0 },
             .prevPos = { 0 },
             .radius = BALL_RADIUS,
             .vel = { 0, 0 },
@@ -902,6 +984,7 @@ static void setupGameWorld( GameWorld *gw ) {
         .power = initPower,
         .minPower = 0,
         .maxPower = maxPower,
+        .hitPoint = { 0, 0 },
         .color = { 17, 50, 102, 255 },
         .pocketedBalls = { 0 },
         .pocketedCount = 0,
@@ -920,6 +1003,7 @@ static void setupGameWorld( GameWorld *gw ) {
         .power = initPower,
         .minPower = 0,
         .maxPower = maxPower,
+        .hitPoint = { 0, 0 },
         .color = { 102, 17, 37, 255 },
         .pocketedBalls = { 0 },
         .pocketedCount = 0,
