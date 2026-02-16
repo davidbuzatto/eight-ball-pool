@@ -34,6 +34,12 @@ typedef enum CueStickState {
     CUE_STICK_STATE_HIT
 } CueStickState;
 
+typedef enum BallGroup {
+    BALL_GROUP_UNDEFINED,
+    BALL_GROUP_PLAIN,
+    BALL_GROUP_STRIPED
+} BallGroup;
+
 typedef struct Ball {
     Vector2 center;
     Vector2 prevPos;
@@ -64,6 +70,7 @@ typedef struct CueStick {
     int pocketedCount;
     CueStickType type;
     CueStickState state;
+    BallGroup group;
 } CueStick;
 
 typedef struct Cushion {
@@ -74,6 +81,16 @@ typedef struct Pocket {
     Vector2 center;
     int radius;
 } Pocket;
+
+typedef struct TurnStatistics {
+    // statistics for game flow control
+    int cueBallHits;
+    int cueBallFirstHitNumber;
+    bool cueBallPocketed;
+    bool ballsTouchedCushion[16];
+    int pocketedBalls[16];
+    int pocketedCount;
+} TurnStatistics;
 
 typedef struct GameWorld {
 
@@ -88,23 +105,20 @@ typedef struct GameWorld {
     GameState state;
     GameBallsState ballsState;
 
-    // for HUD
+    // for HUD and game logic
     int pocketedBalls[15];
     int pocketedCount;
 
-    // statistics for game flow control
-    int cueBallCushionHits;   // remove?
-    int cueBallHits;
-    int ballCushionHits;      // remove?
-    int ballsPocketed;
-    bool cueBallPocketed;
-    bool ballsTouchedCushion[16];
+    CueStick *lastCueStick;
+    CueStick *winnerCueStick;
 
     // drawing data
     int marksSpacing;
 
     // game logic
-    bool changeCurrentPlayer;
+    bool applyRules;
+
+    TurnStatistics statistics;
 
 } GameWorld;
 

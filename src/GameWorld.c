@@ -149,7 +149,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
             gw->cueBall->spin.y = cc->hitPoint.y * 2.0f; // top/back spin
 
             cc->state = CUE_STICK_STATE_READY;
-            gw->changeCurrentPlayer = true;
+            gw->applyRules = true;
 
         }
 
@@ -211,13 +211,8 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                 // apply some offset to prevent continuous collision
                 b->center = Vector2Add( b->center, Vector2Scale( collision.normal, 0.1f ) );
 
-                if ( gw->cueBallHits > 0 || gw->state != GAME_STATE_BREAKING ) {
-                    gw->ballsTouchedCushion[b->number] = true;
-                    if ( b == gw->cueBall ) {
-                        gw->cueBallCushionHits++;
-                    } else {
-                        gw->ballCushionHits++;
-                    }
+                if ( gw->statistics.cueBallHits > 0 || gw->state != GAME_STATE_BREAKING ) {
+                    gw->statistics.ballsTouchedCushion[b->number] = true;
                 }
 
             }
@@ -244,7 +239,10 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                     }
                     resolveCollisionBallBall( b, bt );
                     if ( b == gw->cueBall ) {
-                        gw->cueBallHits++;
+                        if ( gw->statistics.cueBallHits == 0 ) {
+                            gw->statistics.cueBallFirstHitNumber = bt->number;
+                        }
+                        gw->statistics.cueBallHits++;
                     }
                 }
             }
@@ -265,18 +263,59 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                 b->moving = false;
 
                 if ( b == gw->cueBall ) {
-                    gw->cueBallPocketed = true;
+                    gw->statistics.cueBallPocketed = true;
+                    resetCueBallPosition( gw );
                 } else {
 
                     if ( gw->state != GAME_STATE_BREAKING ) {
-                        if ( gw->currentCueStick == &gw->cueStickP1 ) {
-                            gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
-                        } else {
-                            gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
+
+                        if ( gw->currentCueStick->group == BALL_GROUP_UNDEFINED ) {
+                            if ( gw->currentCueStick == &gw->cueStickP1 ) {
+                                gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
+                            } else {
+                                gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
+                            }
+                        } else if ( gw->currentCueStick->group == BALL_GROUP_PLAIN ) {
+                            if ( gw->currentCueStick == &gw->cueStickP1 ) {
+                                if ( b->number < 8 ) {
+                                    gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
+                                } else if ( b->number > 8 ) {
+                                    gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
+                                } else {
+                                    trace( " BALL 8!!!" );
+                                }
+                            } else {
+                                if ( b->number < 8 ) {
+                                    gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
+                                } else if ( b->number > 8 ) {
+                                    gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
+                                } else {
+                                    trace( " BALL 8!!!" );
+                                }
+                            }
+                        } else if ( gw->currentCueStick->group == BALL_GROUP_STRIPED ) {
+                            if ( gw->currentCueStick == &gw->cueStickP1 ) {
+                                if ( b->number > 8 ) {
+                                    gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
+                                } else if ( b->number < 8 ) {
+                                    gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
+                                } else {
+                                    trace( " BALL 8!!!" );
+                                }
+                            } else {
+                                if ( b->number > 8 ) {
+                                    gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
+                                } else if ( b->number < 8 ) {
+                                    gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
+                                } else {
+                                    trace( " BALL 8!!!" );
+                                }
+                            }
                         }
+
                     }
 
-                    gw->ballsPocketed++;
+                    gw->statistics.pocketedBalls[gw->statistics.pocketedCount++] = b->number;
                     gw->pocketedBalls[gw->pocketedCount++] = b->number;
 
                 }
@@ -301,7 +340,9 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
         gw->ballsState = GAME_STATE_BALLS_STOPPED;
 
-        if ( gw->changeCurrentPlayer ) {
+        if ( gw->applyRules ) {
+
+            gw->lastCueStick = gw->currentCueStick;
 
             if ( gw->currentCueStick == &gw->cueStickP1 ) {
                 gw->currentCueStick = &gw->cueStickP2;
@@ -311,7 +352,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
             applyRulesEBP( gw );
 
-            gw->changeCurrentPlayer = false;
+            gw->applyRules = false;
 
         }
 
@@ -726,7 +767,7 @@ static void drawHud( GameWorld *gw ) {
         },
         0.4f,
         10,
-        ColorBrightness( BG_COLOR, -0.5f )
+        gw->currentCueStick->color
     );
 
     DrawRectangleRoundedLines( 
@@ -735,11 +776,11 @@ static void drawHud( GameWorld *gw ) {
         },
         0.4f,
         10,
-        GRAY
+        RAYWHITE
     );
 
     DrawText( gameStateNames[gw->state], GetScreenWidth() / 2 - w / 2 + 3, 18, fs, BLACK );
-    DrawText( gameStateNames[gw->state], GetScreenWidth() / 2 - w / 2, 15, fs, GRAY );
+    DrawText( gameStateNames[gw->state], GetScreenWidth() / 2 - w / 2, 15, fs, RAYWHITE );
 
     int musicIconS = bgMusicEnabled ? 0 : 64;
 
@@ -759,16 +800,27 @@ static void drawDebugInfo( GameWorld *gw ) {
     int y = GetScreenHeight() - 200;
     
     DrawRectangle( 0, y, 300, 200, Fade( WHITE, 0.5f ) );
-    DrawText( TextFormat( "cue cushion hits: %d", gw->cueBallCushionHits ), 5, y + 5, 20, BLACK );
-    DrawText( TextFormat( "cue x ball hits: %d", gw->cueBallHits ), 5, y + 25, 20, BLACK );
-    DrawText( TextFormat( "balls cushion hits: %d", gw->ballCushionHits ), 5, y + 45, 20, BLACK );
-    DrawText( TextFormat( "cue pocketed: %s", gw->cueBallPocketed ? "yes" : "no"  ), 5, y + 65, 20, BLACK );
-    DrawText( TextFormat( "balls pocketed: %d", gw->ballsPocketed ), 5, y + 85, 20, BLACK );
-    DrawText( TextFormat( "balls touched cushion:", gw->ballsPocketed ), 5, y + 105, 20, BLACK );
+    DrawText( TextFormat( "cue x ball hits: %d", gw->statistics.cueBallHits ), 5, y + 5, 20, BLACK );
+    DrawText( TextFormat( "cue first hit number: %d", gw->statistics.cueBallFirstHitNumber ), 5, y + 25, 20, BLACK );
+    DrawText( TextFormat( "cue pocketed: %s", gw->statistics.cueBallPocketed ? "yes" : "no"  ), 5, y + 45, 20, BLACK );
+    DrawText( TextFormat( "balls touched cushion:", gw->statistics.pocketedCount ), 5, y + 65, 20, BLACK );
 
     for ( int i = 0; i < 16; i++ ) {
-        DrawText( TextFormat( "%s", gw->ballsTouchedCushion[i] ? "y" : "n" ), 15 + 15 * i, y + 125, 20, BLACK );
+        DrawText( TextFormat( "%s", gw->statistics.ballsTouchedCushion[i] ? "y" : "n" ), 15 + 15 * i, y + 85, 20, BLACK );
     }
+
+    DrawText( TextFormat( "balls pocketed: %d", gw->statistics.pocketedCount ), 5, y + 105, 20, BLACK );
+
+    int xStart = 15;
+    for ( int i = 0; i < gw->statistics.pocketedCount; i++ ) {
+        const char *t = TextFormat( "%d", gw->statistics.pocketedBalls[i] );
+        int w = MeasureText( t, 20 );
+        DrawText( t, xStart, y + 125, 20, BLACK );
+        xStart += w + 10;
+    }
+
+    DrawText( TextFormat( "group: %d", gw->cueStickP1.group ), 20, 50, 20, WHITE );
+    DrawText( TextFormat( "group: %d", gw->cueStickP2.group ), 800, 50, 20, WHITE );
 
 }
 

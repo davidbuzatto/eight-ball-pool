@@ -12,3 +12,4 @@
 
 void setupEBP( GameWorld *gw );
 void applyRulesEBP( GameWorld *gw );
+void resetCueBallPosition( GameWorld *gw );
