@@ -39,6 +39,7 @@ static Vector2 pressOffset = { 0 };
 static float highlighCurrentPlayerTime = 0.8f;
 static float highlighCurrentPlayerCounter = 0.0f;
 
+static bool showHelp = SHOW_HELP;
 static bool bgMusicEnabled = BG_MUSIC_ENABLED;
 
 static const char *gameStateNames[] = { 
@@ -52,6 +53,7 @@ static const char *gameStateNames[] = {
 static void drawHud( GameWorld *gw );
 static void drawDebugInfo( GameWorld *gw );
 static void drawGameOver( GameWorld *gw );
+static void drawHelp( void );
 static void drawTrajectory( GameWorld *gw );
 static void playBallHitSound( void );
 static void playBallCushionHitSound( void );
@@ -79,6 +81,14 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
     if ( bgMusicEnabled ) {
         UpdateMusicStream( rm.backgroundMusic );
+    }
+
+    if ( IsKeyPressed( KEY_F2 ) ) {
+        showHelp = !showHelp;
+    }
+
+    if ( showHelp ) {
+        return;
     }
 
     if ( IsKeyPressed( KEY_R ) ) {
@@ -492,6 +502,10 @@ void drawGameWorld( GameWorld *gw ) {
         drawGameOver( gw );
     }
 
+    if ( showHelp ) {
+        drawHelp();
+    }
+
     if ( SHOW_DEBUG_INFO ) {
         drawDebugInfo( gw );
     }
@@ -903,36 +917,200 @@ static void drawGameOver( GameWorld *gw ) {
 
 }
 
-static void playBallHitSound( void ) {
-    PlaySound( rm.ballHitSounds[(rm.ballHitIndex++) % rm.ballHitCount] );
+static void drawHelp( void ) {
+
+    DrawRectangle( 0, 0, GetScreenWidth(), GetScreenHeight(), Fade( BLACK, 0.85f ) );
+
+    int boxWidth = 500;
+    int boxHeight = 510;
+    int boxX = GetScreenWidth() / 2 - boxWidth / 2;
+    int boxY = GetScreenHeight() / 2 - boxHeight / 2;
+
+    DrawRectangleRounded( 
+        (Rectangle) { boxX, boxY, boxWidth, boxHeight },
+        0.1f,
+        10,
+        (Color) { 20, 25, 35, 255 }
+    );
+
+    DrawRectangleRoundedLines( 
+        (Rectangle) { boxX, boxY, boxWidth, boxHeight },
+        0.1f,
+        10,
+        RAYWHITE
+    );
+
+    int currentY = boxY + 15;
+    int leftMargin = boxX + 25;
+    int lineHeight = 22;
+
+    const char *title = "HELP - CONTROLS & RULES";
+    int titleSize = 24;
+    int titleWidth = MeasureText( title, titleSize );
+    DrawText( 
+        title, 
+        GetScreenWidth() / 2 - titleWidth / 2 + 2, 
+        currentY + 2, 
+        titleSize, 
+        BLACK 
+    );
+    DrawText( 
+        title, 
+        GetScreenWidth() / 2 - titleWidth / 2, 
+        currentY, 
+        titleSize, 
+        GOLD 
+    );
+
+    currentY += 35;
+
+    DrawLineEx( 
+        (Vector2) { boxX + 20, currentY }, 
+        (Vector2) { boxX + boxWidth - 20, currentY }, 
+        2, 
+        Fade( RAYWHITE, 0.3f ) 
+    );
+
+    currentY += 12;
+
+    DrawText( "CONTROLS:", leftMargin, currentY, 18, SKYBLUE );
+    currentY += lineHeight;
+
+    DrawText( "Mouse Movement", leftMargin + 15, currentY, 14, RAYWHITE );
+    DrawText( "Aim cue stick", leftMargin + 220, currentY, 14, GRAY );
+    currentY += lineHeight;
+
+    DrawText( "Mouse Wheel", leftMargin + 15, currentY, 14, RAYWHITE );
+    DrawText( "Adjust shot power", leftMargin + 220, currentY, 14, GRAY );
+    currentY += lineHeight;
+
+    DrawText( "Left Click", leftMargin + 15, currentY, 14, RAYWHITE );
+    DrawText( "Shoot", leftMargin + 220, currentY, 14, GRAY );
+    currentY += lineHeight;
+
+    DrawText( "Right Click + Drag", leftMargin + 15, currentY, 14, RAYWHITE );
+    DrawText( "Move balls (free positioning)", leftMargin + 220, currentY, 14, GRAY );
+    currentY += lineHeight;
+
+    DrawText( "Arrow Keys", leftMargin + 15, currentY, 14, RAYWHITE );
+    DrawText( "Adjust hit point (spin)", leftMargin + 220, currentY, 14, GRAY );
+    currentY += lineHeight;
+
+    DrawText( "Space", leftMargin + 15, currentY, 14, RAYWHITE );
+    DrawText( "Reset hit point to center", leftMargin + 220, currentY, 14, GRAY );
+    currentY += lineHeight;
+
+    DrawText( "R", leftMargin + 15, currentY, 14, RAYWHITE );
+    DrawText( "Restart game", leftMargin + 220, currentY, 14, GRAY );
+    currentY += lineHeight;
+
+    DrawText( "M", leftMargin + 15, currentY, 14, RAYWHITE );
+    DrawText( "Toggle background music", leftMargin + 220, currentY, 14, GRAY );
+    currentY += lineHeight;
+
+    DrawText( "S", leftMargin + 15, currentY, 14, RAYWHITE );
+    DrawText( "Stop all balls immediately", leftMargin + 220, currentY, 14, GRAY );
+    currentY += lineHeight;
+
+    DrawText( "F2", leftMargin + 15, currentY, 14, RAYWHITE );
+    DrawText( "Toggle this help screen", leftMargin + 220, currentY, 14, GRAY );
+    currentY += lineHeight + 8;
+
+    DrawLineEx( 
+        (Vector2) { boxX + 20, currentY }, 
+        (Vector2) { boxX + boxWidth - 20, currentY }, 
+        2, 
+        Fade( RAYWHITE, 0.3f ) 
+    );
+
+    currentY += 12;
+
+    // Rules section
+    DrawText( "8 BALL POOL RULES:", leftMargin, currentY, 18, SKYBLUE );
+    currentY += lineHeight;
+
+    DrawText( "- First player to pocket all their balls (solid or striped) and then", leftMargin + 15, currentY, 13, RAYWHITE );
+    currentY += 18;
+    DrawText( "  legally pocket the 8-ball wins;", leftMargin + 15, currentY, 13, RAYWHITE );
+    currentY += 18;
+
+    DrawText( "- Groups are assigned after the break based on first ball pocketed;", leftMargin + 15, currentY, 13, RAYWHITE );
+    currentY += 18;
+
+    DrawText( "- You must hit your group first, or it's a foul (ball in hand);", leftMargin + 15, currentY, 13, RAYWHITE );
+    currentY += 18;
+
+    DrawText( "- Pocketing the 8-ball before clearing your group = instant loss;", leftMargin + 15, currentY, 13, RAYWHITE );
+    currentY += 18;
+
+    DrawText( "- Continue playing if you pocket a ball legally.", leftMargin + 15, currentY, 13, RAYWHITE );
+    currentY += 22;
+
+    DrawLineEx( 
+        (Vector2) { boxX + 20, currentY }, 
+        (Vector2) { boxX + boxWidth - 20, currentY }, 
+        2, 
+        Fade( RAYWHITE, 0.3f ) 
+    );
+
+    currentY += 8;
+
+    const char *author = "Author: Prof. Dr. David Buzatto";
+    int authorSize = 14;
+    int authorWidth = MeasureText( author, authorSize );
+    DrawText( 
+        author, 
+        GetScreenWidth() / 2 - authorWidth / 2, 
+        currentY, 
+        authorSize, 
+        Fade( RAYWHITE, 0.7f ) 
+    );
+
+    currentY += 20;
+
+    const char *closeText = "Press F2 to close";
+    int closeSize = 16;
+    int closeWidth = MeasureText( closeText, closeSize );
+    DrawText( 
+        closeText, 
+        GetScreenWidth() / 2 - closeWidth / 2 + 1, 
+        currentY + 1, 
+        closeSize, 
+        BLACK 
+    );
+    DrawText( 
+        closeText, 
+        GetScreenWidth() / 2 - closeWidth / 2, 
+        currentY, 
+        closeSize, 
+        GOLD 
+    );
+
 }
 
-static void playBallCushionHitSound( void ) {
-    PlaySound( rm.ballCushionHitSounds[(rm.ballCushionHitIndex++) % rm.ballCushionHitCount] );
-}
-
-// Calcula a trajetória prevista
+// calculate the predicted trajectory (better)
 static TrajectoryPrediction calculateTrajectory( GameWorld *gw ) {
 
     TrajectoryPrediction pred = { 0 };
 
     CueStick *cs = gw->currentCueStick;
 
-    // Direção da tacada
+    // shot direction
     float angle = DEG2RAD * cs->angle;
     Vector2 direction = { cosf( angle ), sinf( angle ) };
 
-    // Ponto de partida
+    // starting point
     Vector2 rayStart = gw->cueBall->center;
 
-    // Distância máxima do raio (atravessa a mesa toda)
+    // maximum ray distance (crosses the entire table)
     float maxDistance = 2000.0f;
 
     float closestDistance = maxDistance;
     int closestBallIndex = -1;
     Vector2 closestHitPoint = { 0 };
+    Vector2 closestCollisionPoint = { 0 };
 
-    // Verifica colisão com cada bola
+    // check collision with each ball
     for ( int i = 1; i <= BALL_COUNT; i++ ) {
 
         Ball *b = &gw->balls[i];
@@ -941,45 +1119,57 @@ static TrajectoryPrediction calculateTrajectory( GameWorld *gw ) {
             continue;
         }
 
-        // Vetor do centro da bola branca ao centro da bola alvo
+        // vector from cue ball center to target ball center
         Vector2 toTarget = Vector2Subtract( b->center, rayStart );
 
-        // Projeção do vetor no raio
+        // projection of vector onto ray direction
         float projection = Vector2DotProduct( toTarget, direction );
 
-        // Se a projeção é negativa, a bola está atrás
-        if ( projection < 0 ) {
+        // if projection is negative, ball is behind
+        if ( projection <= 0 ) {
             continue;
         }
 
-        // Ponto mais próximo no raio
-        Vector2 closestPoint = Vector2Add( rayStart, Vector2Scale( direction, projection ) );
+        // closest point on the ray to the ball center
+        Vector2 closestPointOnRay = Vector2Add( rayStart, Vector2Scale( direction, projection ) );
 
-        // Distância do centro da bola ao ponto mais próximo
-        float distanceToRay = Vector2Distance( b->center, closestPoint );
+        // distance from ball center to the ray
+        float distanceToRay = Vector2Distance( b->center, closestPointOnRay );
 
-        // Soma dos raios
+        // sum of radii (collision threshold)
         float sumRadii = gw->cueBall->radius + b->radius;
 
-        // Se a distância é menor que a soma dos raios, há colisão
-        if ( distanceToRay < sumRadii ) {
+        // if distance is less than sum of radii, there's a collision
+        if ( distanceToRay <= sumRadii ) {
 
-            // Calcula a distância até o ponto de colisão
-            float offsetDistance = sqrtf( sumRadii * sumRadii - distanceToRay * distanceToRay );
+            // use Pythagorean theorem to find exact collision distance
+            // we need to find where the cue ball's edge first touches the target ball's edge
+            float distanceSquared = sumRadii * sumRadii - distanceToRay * distanceToRay;
+
+            if ( distanceSquared < 0 ) {
+                distanceSquared = 0; // numerical safety
+            }
+
+            float offsetDistance = sqrtf( distanceSquared );
             float collisionDistance = projection - offsetDistance;
 
-            if ( collisionDistance > 0 && collisionDistance < closestDistance ) {
+            // only consider forward collisions
+            if ( collisionDistance > 0.01f && collisionDistance < closestDistance ) {
                 closestDistance = collisionDistance;
                 closestBallIndex = i;
 
-                // Ponto de colisão
-                Vector2 collisionPoint = Vector2Add( rayStart, Vector2Scale( direction, collisionDistance ) );
+                // exact collision point (center of cue ball at moment of impact)
+                closestCollisionPoint = Vector2Add( rayStart, Vector2Scale( direction, collisionDistance ) );
 
-                // Ponto de contato na superfície da bola alvo
-                Vector2 toBall = Vector2Normalize( Vector2Subtract( b->center, collisionPoint ) );
-                closestHitPoint = Vector2Add( b->center, Vector2Scale( toBall, -b->radius ) );
+                // contact point on target ball surface
+                // this is the point where the two balls touch
+                Vector2 centerToCenterDir = Vector2Normalize( Vector2Subtract( b->center, closestCollisionPoint ) );
+                closestHitPoint = Vector2Subtract( b->center, Vector2Scale( centerToCenterDir, b->radius ) );
+
             }
+
         }
+
     }
 
     if ( closestBallIndex != -1 ) {
@@ -987,25 +1177,24 @@ static TrajectoryPrediction calculateTrajectory( GameWorld *gw ) {
         pred.willHitBall = true;
         pred.ballIndex = closestBallIndex;
         pred.hitPoint = closestHitPoint;
+        pred.cueBallStopPoint = closestCollisionPoint;
 
-        // Ponto onde a bola branca para (aproximado)
-        pred.cueBallStopPoint = Vector2Add( rayStart, Vector2Scale( direction, closestDistance ) );
-
-        // Direção que a bola alvo vai tomar
+        // direction target ball will take
+        // this is the line from cue ball center to target ball center at impact
         Ball *targetBall = &gw->balls[closestBallIndex];
         Vector2 impactDirection = Vector2Normalize( 
-            Vector2Subtract( targetBall->center, pred.cueBallStopPoint ) 
+            Vector2Subtract( targetBall->center, closestCollisionPoint ) 
         );
 
         pred.targetBallDirection = impactDirection;
 
-        // Velocidade estimada (baseada na potência)
+        // estimated speed (based on power)
         float powerPercent = getCueStickPowerPercentage( cs );
-        pred.targetBallSpeed = powerPercent * 300.0f; // ajuste conforme necessário
+        pred.targetBallSpeed = powerPercent * 300.0f; // adjust as needed
 
     } else {
 
-        // Não vai acertar nenhuma bola, trajetória vai até o fim
+        // won't hit any ball, trajectory goes to the end
         pred.willHitBall = false;
         pred.cueBallStopPoint = Vector2Add( rayStart, Vector2Scale( direction, maxDistance ) );
 
@@ -1015,29 +1204,152 @@ static TrajectoryPrediction calculateTrajectory( GameWorld *gw ) {
 
 }
 
-// Desenha a trajetória prevista
-static void drawTrajectory( GameWorld *gw ) {
+// calculate the predicted trajectory
+__attribute__((unused)) static TrajectoryPrediction calculateTrajectoryOld( GameWorld *gw ) {
 
-    TrajectoryPrediction pred = calculateTrajectory( gw );
+    TrajectoryPrediction pred = { 0 };
 
     CueStick *cs = gw->currentCueStick;
+
+    // shot direction
+    float angle = DEG2RAD * cs->angle;
+    Vector2 direction = { cosf( angle ), sinf( angle ) };
+
+    // starting point
+    Vector2 rayStart = gw->cueBall->center;
+
+    // maximum ray distance (crosses the entire table)
+    float maxDistance = 2000.0f;
+
+    float closestDistance = maxDistance;
+    int closestBallIndex = -1;
+    Vector2 closestHitPoint = { 0 };
+
+    // check collision with each ball
+    for ( int i = 1; i <= BALL_COUNT; i++ ) {
+
+        Ball *b = &gw->balls[i];
+
+        if ( b->pocketed ) {
+            continue;
+        }
+
+        // vector from cue ball center to target ball center
+        Vector2 toTarget = Vector2Subtract( b->center, rayStart );
+
+        // projection of vector onto ray
+        float projection = Vector2DotProduct( toTarget, direction );
+
+        // if projection is negative, ball is behind
+        if ( projection < 0 ) {
+            continue;
+        }
+
+        // closest point on ray
+        Vector2 closestPoint = Vector2Add( rayStart, Vector2Scale( direction, projection ) );
+
+        // distance from ball center to closest point
+        float distanceToRay = Vector2Distance( b->center, closestPoint );
+
+        // sum of radii
+        float sumRadii = gw->cueBall->radius + b->radius;
+
+        // if distance is less than sum of radii, there's a collision
+        if ( distanceToRay < sumRadii ) {
+
+            // calculate distance to collision point
+            float offsetDistance = sqrtf( sumRadii * sumRadii - distanceToRay * distanceToRay );
+            float collisionDistance = projection - offsetDistance;
+
+            if ( collisionDistance > 0 && collisionDistance < closestDistance ) {
+
+                closestDistance = collisionDistance;
+                closestBallIndex = i;
+
+                // collision point
+                Vector2 collisionPoint = Vector2Add( rayStart, Vector2Scale( direction, collisionDistance ) );
+
+                // contact point on target ball surface
+                Vector2 toBall = Vector2Normalize( Vector2Subtract( b->center, collisionPoint ) );
+                closestHitPoint = Vector2Add( b->center, Vector2Scale( toBall, -b->radius ) );
+
+            }
+
+        }
+
+    }
+
+    if ( closestBallIndex != -1 ) {
+
+        pred.willHitBall = true;
+        pred.ballIndex = closestBallIndex;
+        pred.hitPoint = closestHitPoint;
+
+        // point where cue ball stops (approximate)
+        pred.cueBallStopPoint = Vector2Add( rayStart, Vector2Scale( direction, closestDistance ) );
+
+        // direction target ball will take
+        Ball *targetBall = &gw->balls[closestBallIndex];
+        Vector2 impactDirection = Vector2Normalize( 
+            Vector2Subtract( targetBall->center, pred.cueBallStopPoint ) 
+        );
+
+        pred.targetBallDirection = impactDirection;
+
+        // estimated speed (based on power)
+        float powerPercent = getCueStickPowerPercentage( cs );
+        pred.targetBallSpeed = powerPercent * 300.0f; // todo: adjust if needed
+
+    } else {
+
+        // won't hit any ball, trajectory goes to the end
+        pred.willHitBall = false;
+        pred.cueBallStopPoint = Vector2Add( rayStart, Vector2Scale( direction, maxDistance ) );
+
+    }
+
+    return pred;
+
+}
+
+// draw the predicted trajectory
+static void drawTrajectory( GameWorld *gw ) {
+
+    //TrajectoryPrediction pred = calculateTrajectoryOld( gw );
+    TrajectoryPrediction pred = calculateTrajectory( gw );
     Vector2 rayStart = gw->cueBall->center;
 
     if ( pred.willHitBall ) {
 
-        // 1. Linha da bola branca até o ponto de impacto
+        DrawTexturePro( 
+            rm.ballsTexture, 
+            (Rectangle) { 0, 0, 64, 64 }, 
+            (Rectangle) { pred.cueBallStopPoint.x - gw->cueBall->radius, pred.cueBallStopPoint.y - gw->cueBall->radius, gw->cueBall->radius * 2, gw->cueBall->radius * 2 },
+            (Vector2) { 0 },
+            0.0f,
+            Fade( WHITE, 0.3f ) 
+        );
+
+        DrawCircleLines( 
+            pred.cueBallStopPoint.x, 
+            pred.cueBallStopPoint.y, 
+            gw->cueBall->radius, 
+            Fade( BLACK, 0.3f ) 
+        );
+
+        // line from cue ball to impact point
         DrawLineEx( 
             rayStart, 
             pred.cueBallStopPoint, 
             2.0f, 
-            Fade( SKYBLUE, 0.6f ) 
+            Fade( WHITE, 0.6f ) 
         );
 
-        // Linha pontilhada para indicar continuação
+        // dashed line to indicate continuation
         Vector2 direction = Vector2Normalize( Vector2Subtract( pred.cueBallStopPoint, rayStart ) );
         Vector2 extendedPoint = Vector2Add( pred.cueBallStopPoint, Vector2Scale( direction, 50.0f ) );
 
-        // Desenha linha pontilhada
+        // draw dashed line
         float dashLength = 5.0f;
         float gapLength = 5.0f;
         Vector2 dashDir = Vector2Normalize( Vector2Subtract( extendedPoint, pred.cueBallStopPoint ) );
@@ -1046,35 +1358,35 @@ static void drawTrajectory( GameWorld *gw ) {
         for ( float d = 0; d < totalLength; d += dashLength + gapLength ) {
             Vector2 start = Vector2Add( pred.cueBallStopPoint, Vector2Scale( dashDir, d ) );
             Vector2 end = Vector2Add( start, Vector2Scale( dashDir, dashLength ) );
-            DrawLineEx( start, end, 2.0f, Fade( SKYBLUE, 0.3f ) );
+            DrawLineEx( start, end, 2.0f, Fade( WHITE, 0.4f ) );
         }
 
-        // 2. Ponto de impacto na bola alvo
+        // impact point on target ball
         Ball *targetBall = &gw->balls[pred.ballIndex];
 
-        // Círculo no ponto de contato
-        DrawCircleV( pred.hitPoint, 4.0f, YELLOW );
-        DrawCircleV( pred.hitPoint, 6.0f, Fade( YELLOW, 0.3f ) );
+        // circle at contact point
+        DrawCircleV( pred.hitPoint, 4.0f, WHITE );
+        DrawCircleV( pred.hitPoint, 6.0f, Fade( WHITE, 0.3f ) );
 
-        // Destaque na bola que será atingida
-        DrawCircleLines( targetBall->center.x, targetBall->center.y, targetBall->radius + 3, Fade( YELLOW, 0.5f ) );
-        DrawCircleLines( targetBall->center.x, targetBall->center.y, targetBall->radius + 5, Fade( YELLOW, 0.3f ) );
+        // highlight on ball that will be hit
+        DrawCircleLines( targetBall->center.x, targetBall->center.y, targetBall->radius + 3, Fade( WHITE, 0.5f ) );
+        DrawCircleLines( targetBall->center.x, targetBall->center.y, targetBall->radius + 5, Fade( WHITE, 0.3f ) );
 
-        // 3. Trajetória prevista da bola atingida
+        // predicted trajectory of hit ball
         Vector2 targetEndPoint = Vector2Add( 
             targetBall->center, 
             Vector2Scale( pred.targetBallDirection, pred.targetBallSpeed ) 
         );
 
-        // Linha da trajetória da bola alvo
+        // target ball trajectory line
         DrawLineEx( 
             targetBall->center, 
             targetEndPoint, 
             2.0f, 
-            Fade( ORANGE, 0.5f ) 
+            Fade( WHITE, 0.5f ) 
         );
 
-        // Seta na ponta
+        // arrow at the tip
         float arrowSize = 8.0f;
         Vector2 arrowDir = Vector2Normalize( pred.targetBallDirection );
         Vector2 arrowPerp = { -arrowDir.y, arrowDir.x };
@@ -1089,38 +1401,26 @@ static void drawTrajectory( GameWorld *gw ) {
             Vector2Scale( arrowPerp, -arrowSize / 2 )
         );
 
-        DrawTriangle( arrowTip, arrowLeft, arrowRight, Fade( ORANGE, 0.5f ) );
-
-        // Indicador de número da bola que será atingida
-        const char *ballNumber = TextFormat( "%d", targetBall->number );
-        int textWidth = MeasureText( ballNumber, 16 );
-
-        DrawRectangle( 
-            targetBall->center.x - textWidth / 2 - 4, 
-            targetBall->center.y - targetBall->radius - 25, 
-            textWidth + 8, 
-            20, 
-            Fade( BLACK, 0.7f ) 
-        );
-
-        DrawText( 
-            ballNumber, 
-            targetBall->center.x - textWidth / 2, 
-            targetBall->center.y - targetBall->radius - 23, 
-            16, 
-            YELLOW 
-        );
+        DrawTriangle( arrowTip, arrowRight, arrowLeft, Fade( WHITE, 0.5f ) );
 
     } else {
 
-        // Não vai acertar nenhuma bola, apenas desenha a linha
+        // won't hit any ball, just draw the line
         DrawLineEx( 
             rayStart, 
             pred.cueBallStopPoint, 
             2.0f, 
-            Fade( GRAY, 0.4f ) 
+            Fade( WHITE, 0.4f ) 
         );
 
     }
 
+}
+
+static void playBallHitSound( void ) {
+    PlaySound( rm.ballHitSounds[(rm.ballHitIndex++) % rm.ballHitCount] );
+}
+
+static void playBallCushionHitSound( void ) {
+    PlaySound( rm.ballCushionHitSounds[(rm.ballCushionHitIndex++) % rm.ballCushionHitCount] );
 }
