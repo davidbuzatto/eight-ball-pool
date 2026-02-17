@@ -128,3 +128,12 @@ typedef struct CollisionResult {
     Vector2 point;        // point of contact
     Vector2 normal;       // collision normal
 } CollisionResult;
+
+typedef struct TrajectoryPrediction {
+    bool willHitBall;
+    int ballIndex;
+    Vector2 hitPoint;
+    Vector2 cueBallStopPoint;
+    Vector2 targetBallDirection;
+    float targetBallSpeed;
+} TrajectoryPrediction;

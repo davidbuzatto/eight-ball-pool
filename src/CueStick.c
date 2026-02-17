@@ -87,14 +87,14 @@ void drawCueStick( CueStick *cs ) {
 
     int h = (int) ( cs->size / rm.cueSticksTexture.width * 14 );
 
-    DrawTexturePro( 
+    /*DrawTexturePro( 
         rm.cueSticksTexture, 
         (Rectangle) { 0, 14 * cs->type, 510, 14 },
         (Rectangle) { cs->target.x - wDist - wSize, cs->target.y - hDist - hSize, cs->size, h },
         (Vector2) { 0, h / 2 },
         cs->angle,
         WHITE
-    );
+    );*/
 
     /*float wTipSize = 5 * c;
     float hTipSize = 5 * s;
