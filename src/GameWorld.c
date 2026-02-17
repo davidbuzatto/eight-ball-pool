@@ -51,6 +51,7 @@ static const char *gameStateNames[] = {
 
 static void drawHud( GameWorld *gw );
 static void drawDebugInfo( GameWorld *gw );
+static void drawGameOver( GameWorld *gw );
 static void playBallHitSound( void );
 static void playBallCushionHitSound( void );
 
@@ -481,6 +482,10 @@ void drawGameWorld( GameWorld *gw ) {
 
     drawHud( gw );
 
+    if ( gw->state == GAME_STATE_GAME_OVER ) {
+        drawGameOver( gw );
+    }
+
     if ( SHOW_DEBUG_INFO ) {
         drawDebugInfo( gw );
     }
@@ -813,6 +818,82 @@ static void drawDebugInfo( GameWorld *gw ) {
 
     DrawText( TextFormat( "group: %d", gw->cueStickP1.group ), 20, 50, 20, WHITE );
     DrawText( TextFormat( "group: %d", gw->cueStickP2.group ), 800, 50, 20, WHITE );
+
+}
+
+static void drawGameOver( GameWorld *gw ) {
+
+    DrawRectangle( 0, 0, GetScreenWidth(), GetScreenHeight(), Fade( BLACK, 0.7f ) );
+    
+    int boxWidth = 400;
+    int boxHeight = 200;
+    int boxX = GetScreenWidth() / 2 - boxWidth / 2;
+    int boxY = GetScreenHeight() / 2 - boxHeight / 2;
+
+    DrawRectangleRounded( 
+        (Rectangle) { boxX, boxY, boxWidth, boxHeight },
+        0.2f,
+        10,
+        gw->winnerCueStick->color
+    );
+
+    DrawRectangleRoundedLines( 
+        (Rectangle) { boxX, boxY, boxWidth, boxHeight },
+        0.2f,
+        10,
+        RAYWHITE
+    );
+
+    const char *title = "GAME OVER";
+    int titleSize = 40;
+    int titleWidth = MeasureText( title, titleSize );
+
+    DrawText( 
+        title, 
+        GetScreenWidth() / 2 - titleWidth / 2 + 2, 
+        boxY + 32, 
+        titleSize, 
+        BLACK 
+    );
+
+    DrawText( 
+        title, 
+        GetScreenWidth() / 2 - titleWidth / 2, 
+        boxY + 30, 
+        titleSize, 
+        RAYWHITE 
+    );
+
+    const char *winnerText = gw->winnerCueStick == &gw->cueStickP1 ? "Player 1 Wins!" : "Player 2 Wins!";
+    int winnerSize = 30;
+    int winnerWidth = MeasureText( winnerText, winnerSize );
+
+    DrawText( 
+        winnerText, 
+        GetScreenWidth() / 2 - winnerWidth / 2 + 2, 
+        boxY + 92, 
+        winnerSize, 
+        BLACK 
+    );
+
+    DrawText( 
+        winnerText, 
+        GetScreenWidth() / 2 - winnerWidth / 2, 
+        boxY + 90, 
+        winnerSize, 
+        GOLD 
+    );
+
+    const char *restartText = "Press R to restart";
+    int restartSize = 20;
+    int restartWidth = MeasureText( restartText, restartSize );
+    DrawText( 
+        restartText, 
+        GetScreenWidth() / 2 - restartWidth / 2, 
+        boxY + 150, 
+        restartSize, 
+        Fade( RAYWHITE, 0.7f ) 
+    );
 
 }
 

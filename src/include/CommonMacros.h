@@ -13,7 +13,7 @@
 
 #define TEST_BALL_POSITIONING false
 #define SHUFFLE_BALLS true
-#define SHOW_DEBUG_INFO true
+#define SHOW_DEBUG_INFO false
 #define BG_MUSIC_ENABLED false
 
 #define BALL_COUNT 15

@@ -141,14 +141,14 @@ void resolveCollisionBallBall( Ball *b1, Ball *b2 ) {
 
 }
 
-// Verifica colisão círculo vs segmento de linha
+// Check collision between circle and line segment
 CollisionResult ballSegmentCollision( Ball *b, Vector2 segStart, Vector2 segEnd ) {
-    
+
     CollisionResult result = { 0 };
 
     Vector2 movement = Vector2Subtract( b->center, b->prevPos );
 
-    // se não há movimento, não há colisão sweep
+    // if there's no movement, there's no sweep collision
     if ( Vector2Length( movement ) < 0.001f ) {
         return result;
     }
@@ -157,32 +157,32 @@ CollisionResult ballSegmentCollision( Ball *b, Vector2 segStart, Vector2 segEnd 
     float segLen = Vector2Length( segDir );
     Vector2 segNorm = Vector2Normalize( segDir );
 
-    // normal do segmento (perpendicular, aponta para "fora")
+    // segment normal (perpendicular, points "outward")
     Vector2 normal = { segNorm.y, -segNorm.x };
 
-    // distância do centro atual à linha
+    // distance from current center to line
     Vector2 toLineCurr = Vector2Subtract( b->center, segStart );
     float distCurr = Vector2DotProduct( toLineCurr, normal );
 
-    // distância do centro anterior à linha
+    // distance from previous center to line
     Vector2 toLinePrev = Vector2Subtract( b->prevPos, segStart );
     float distPrev = Vector2DotProduct( toLinePrev, normal );
 
-    // verifica se está se aproximando da linha
+    // check if moving away from the line
     if ( distCurr >= distPrev ) {
-        return result; // Afastando ou paralelo
+        return result; // moving away or parallel
     }
 
-    // verifica se vai colidir neste frame
+    // check if will collide this frame
     if ( distCurr > b->radius || distPrev < -b->radius ) {
-        return result; // muito longe
+        return result; // too far away
     }
 
-    // calcula t (quando o círculo toca a linha)
+    // calculate t (when the circle touches the line)
     float distChange = distCurr - distPrev;
     float t = ( distPrev - b->radius ) / -distChange;
 
-    // clamp t entre 0 e 1
+    // clamp t between 0 and 1
     if ( t < 0.0f ) {
         t = 0.0f;
     }
@@ -190,14 +190,14 @@ CollisionResult ballSegmentCollision( Ball *b, Vector2 segStart, Vector2 segEnd 
         t = 1.0f;
     }
 
-    // posição do centro no momento da colisão
+    // center position at collision moment
     Vector2 collisionCenter = Vector2Add( b->prevPos, Vector2Scale( movement, t ) );
 
-    // projeção no segmento
+    // projection on segment
     Vector2 toCollision = Vector2Subtract( collisionCenter, segStart );
     float projection = Vector2DotProduct( toCollision, segNorm );
 
-    // verifica se está dentro do segmento (com margem)
+    // check if within segment bounds (with margin)
     if ( projection >= -0.1f && projection <= segLen + 0.1f ) {
         result.hasCollision = true;
         result.t = t;
@@ -209,7 +209,7 @@ CollisionResult ballSegmentCollision( Ball *b, Vector2 segStart, Vector2 segEnd 
 
 }
 
-// colisão do círculo em movimento com um ponto (vértice)
+// collision of moving circle with a point (vertex)
 CollisionResult ballPointSweep( Ball *b, Vector2 point ) {
 
     CollisionResult result = { 0 };
@@ -245,13 +245,13 @@ CollisionResult ballPointSweep( Ball *b, Vector2 point ) {
 
 }
 
-// calcula a colisão entre uma bola e um polígono convexo
+// calculate collision between a ball and a convex polygon
 CollisionResult ballConvexCollision( Ball *b, Vector2* vertices, int numVertices ) {
 
     CollisionResult earliestCollision = { 0 };
     float minT = INFINITY;
 
-    // verifica cada aresta do polígono convexo
+    // check each edge of the convex polygon
     for ( int i = 0; i < numVertices; i++ ) {
 
         Vector2 start = vertices[i];
@@ -266,7 +266,7 @@ CollisionResult ballConvexCollision( Ball *b, Vector2* vertices, int numVertices
 
     }
 
-    // verifica colisão com os vértices
+    // check collision with vertices
     if ( !earliestCollision.hasCollision ) {
         for ( int i = 0; i < numVertices; i++ ) {
 

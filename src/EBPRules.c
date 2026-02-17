@@ -582,7 +582,6 @@ void setupEBP( GameWorld *gw ) {
     gw->lastCueStick = NULL;
 
     gw->state = GAME_STATE_BREAKING;
-    //gw->state = GAME_STATE_OPEN_TABLE;
     gw->ballsState = GAME_STATE_BALLS_STOPPED;
     gw->pocketedCount = 0;
 
