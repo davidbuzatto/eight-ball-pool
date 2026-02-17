@@ -1,3 +1,11 @@
+/**
+ * @file CueStick.h
+ * @author Prof. Dr. David Buzatto
+ * @brief Common macros for the entire game.
+ * 
+ * @copyright Copyright (c) 2026
+ */
+
 #pragma once
 
 #define MARGIN 100

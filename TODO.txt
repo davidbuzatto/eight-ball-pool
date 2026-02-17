@@ -1,3 +1,1 @@
-Estudar e implementar regras;
-Efeito na bola -> testar mais;
-Tradução para inglês nos comentários;
+Tradução para inglês nos comentários.

@@ -281,16 +281,12 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                                     gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
                                 } else if ( b->number > 8 ) {
                                     gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
-                                } else {
-                                    trace( " BALL 8!!!" );
                                 }
                             } else {
                                 if ( b->number < 8 ) {
                                     gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
                                 } else if ( b->number > 8 ) {
                                     gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
-                                } else {
-                                    trace( " BALL 8!!!" );
                                 }
                             }
                         } else if ( gw->currentCueStick->group == BALL_GROUP_STRIPED ) {
@@ -299,16 +295,12 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                                     gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
                                 } else if ( b->number < 8 ) {
                                     gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
-                                } else {
-                                    trace( " BALL 8!!!" );
                                 }
                             } else {
                                 if ( b->number > 8 ) {
                                     gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
                                 } else if ( b->number < 8 ) {
                                     gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;
-                                } else {
-                                    trace( " BALL 8!!!" );
                                 }
                             }
                         }

@@ -23,8 +23,6 @@
 #include "ResourceManager.h"
 #include "Types.h"
 
-#define TEST_BALL_POSITIONING false
-
 static const Color EBP_YELLOW = { 255, 215, 0,   255 };
 static const Color EBP_BLUE   = { 0,   100, 200, 255 };
 static const Color EBP_RED    = { 220, 20,  60,  255 };
@@ -45,6 +43,9 @@ static void prepareBallData( Color *colors, bool *striped, int *numbers, bool su
 static int countBallsTouchedCushion( GameWorld *gw );
 static void resetStatistics( GameWorld *gw );
 static bool canTouchBall8( GameWorld *gw );
+static bool pocketedBall8( GameWorld *gw );
+static bool pocketedWrongBalls( GameWorld *gw );
+static int countCorrectPocketedBalls( GameWorld *gw );
 
 void applyRulesEBP( GameWorld *gw ) {
 
@@ -55,7 +56,7 @@ void applyRulesEBP( GameWorld *gw ) {
         case GAME_STATE_OPEN_TABLE: applyRulesOpenTable( gw ); break;
         case GAME_STATE_PLAYING: applyRulesPlaying( gw ); break;
         case GAME_STATE_BALL_IN_HAND: applyRulesBallInHand( gw ); break;
-        default: return;
+        default: break;
     }
 
     resetStatistics( gw );
@@ -71,10 +72,21 @@ static void applyRulesBreaking( GameWorld *gw ) {
         !gw->statistics.cueBallPocketed &&
         ( countBallsTouchedCushion( gw ) >= 4 || gw->statistics.pocketedCount > 0 ) 
     ) {
-        trace( "    ok" );
+
+        trace( "    ok - valid break" );
+
+        if ( pocketedBall8( gw ) ) {
+            trace( "    ball 8 pocketed on break - current player wins!" );
+            gw->winnerCueStick = gw->lastCueStick;
+            gw->state = GAME_STATE_GAME_OVER;
+            return;
+        }
+
         gw->state = GAME_STATE_OPEN_TABLE;
+        trace( "    breaking -> open table" );
+
     } else {
-        trace( "    invalid" );
+        trace( "    invalid break = resetting" );
         setupEBP( gw );
     }
 
@@ -84,51 +96,57 @@ static void applyRulesOpenTable( GameWorld *gw ) {
 
     trace( "  state: open table" );
 
-    if ( !isFault( gw ) ) {
-        
-        if ( gw->lastCueStick->group == BALL_GROUP_UNDEFINED && gw->statistics.pocketedCount != 0 ) {
-
-            if ( gw->statistics.cueBallFirstHitNumber < 8 ) {
-                gw->lastCueStick->group = BALL_GROUP_PLAIN;
-            } else if ( gw->statistics.cueBallFirstHitNumber > 8 ) {
-                gw->lastCueStick->group = BALL_GROUP_STRIPED;
-            } else {
-                trace( " BALL 8 open table!" );
-                if ( gw->lastCueStick == &gw->cueStickP1 ) {
-                    gw->winnerCueStick = &gw->cueStickP2;
-                } else {
-                    gw->winnerCueStick = &gw->cueStickP1;
-                }
-                gw->state = GAME_STATE_GAME_OVER;
-                return;
-            }
-
-            if ( gw->lastCueStick == &gw->cueStickP1 ) {
-                if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
-                    gw->cueStickP2.group = BALL_GROUP_STRIPED;
-                } else {
-                    gw->cueStickP2.group = BALL_GROUP_PLAIN;
-                }
-            } else {
-                if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
-                    gw->cueStickP1.group = BALL_GROUP_STRIPED;
-                } else {
-                    gw->cueStickP1.group = BALL_GROUP_PLAIN;
-                }
-            }
-
-            if ( gw->statistics.pocketedCount > 0 ) {
-                gw->currentCueStick = gw->lastCueStick;
-            }
-            
-            gw->state = GAME_STATE_PLAYING;
-            trace( "    open table -> playing" );
-
-        }
-
-    } else {
+    if ( isFault( gw ) ) {
+        trace( "    fault in open table" );
         gw->state = GAME_STATE_BALL_IN_HAND;
         trace( "    open table -> ball in hand" );
+        return;
+    }
+        
+    if ( gw->lastCueStick->group == BALL_GROUP_UNDEFINED && gw->statistics.pocketedCount != 0 ) {
+
+        if ( pocketedBall8( gw ) ) {
+            trace( "    ball 8 pocketed in open table - opponent wins!" );
+            if ( gw->lastCueStick == &gw->cueStickP1 ) {
+                gw->winnerCueStick = &gw->cueStickP2;
+            } else {
+                gw->winnerCueStick = &gw->cueStickP1;
+            }
+            gw->state = GAME_STATE_GAME_OVER;
+            trace( "    open table -> game over" );
+            return;
+        }
+
+        if ( gw->statistics.cueBallFirstHitNumber < 8 ) {
+            gw->lastCueStick->group = BALL_GROUP_PLAIN;
+        } else if ( gw->statistics.cueBallFirstHitNumber > 8 ) {
+            gw->lastCueStick->group = BALL_GROUP_STRIPED;
+        }
+
+        if ( gw->lastCueStick == &gw->cueStickP1 ) {
+            if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
+                gw->cueStickP2.group = BALL_GROUP_STRIPED;
+            } else {
+                gw->cueStickP2.group = BALL_GROUP_PLAIN;
+            }
+        } else {
+            if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
+                gw->cueStickP1.group = BALL_GROUP_STRIPED;
+            } else {
+                gw->cueStickP1.group = BALL_GROUP_PLAIN;
+            }
+        }
+
+        if ( countCorrectPocketedBalls( gw ) > 0 ) {
+            gw->currentCueStick = gw->lastCueStick;
+            trace( "    pocketed correct balls - turn continues" );
+        }
+        
+        gw->state = GAME_STATE_PLAYING;
+        trace( "    open table -> playing" );
+
+    } else if ( gw->statistics.pocketedCount == 0 ) {
+        trace( "    no balls pocketed - turn ends" );
     }
 
 }
@@ -137,17 +155,41 @@ static void applyRulesPlaying( GameWorld *gw ) {
 
     trace( "  state: playing" );
 
-    if ( !isFault( gw ) ) {
+    if ( isFault( gw ) ) {
+        gw->state = GAME_STATE_BALL_IN_HAND;
+        trace( "    open table -> ball in hand" );
+        return;
+    }
 
-        if ( gw->statistics.pocketedCount > 0 ) {
-            gw->currentCueStick = gw->lastCueStick;
+    if ( pocketedBall8( gw ) ) {
+
+        if ( canTouchBall8( gw ) ) {
+            trace( "    ball 8 pocketed legally - player wins!" );
+            gw->winnerCueStick = gw->lastCueStick;
+            gw->state = GAME_STATE_GAME_OVER;
+            return;
+        } else {
+            trace( "    ball 8 pocketed prematurely - opponent wins!" );
+            if ( gw->lastCueStick == &gw->cueStickP1 ) {
+                gw->winnerCueStick = &gw->cueStickP2;
+            } else {
+                gw->winnerCueStick = &gw->cueStickP1;
+            }
+            gw->state = GAME_STATE_GAME_OVER;
+            return;
         }
 
-        trace( "    ok!" );
+    }
 
+    int correctBalls = countCorrectPocketedBalls( gw );
+
+    if ( correctBalls > 0 && !pocketedWrongBalls( gw ) ) {
+        gw->currentCueStick = gw->lastCueStick;
+        trace( "    pocketed correct balls - continue playing" );
+    } else if ( pocketedWrongBalls( gw ) ) {
+        trace( "    pocketed wrong balls - turn ends" );
     } else {
-        gw->state = GAME_STATE_BALL_IN_HAND;
-        trace( "    playing -> ball in hand" );
+        trace( "    no pocketed balls - turn ends" );
     }
 
 }
@@ -156,36 +198,70 @@ static void applyRulesBallInHand( GameWorld *gw ) {
 
     trace( "  state: ball in hand" );
 
-    if ( !isFault( gw ) ) {
-
-        if ( gw->statistics.pocketedCount > 0 ) {
-            gw->currentCueStick = gw->lastCueStick;
-        }
-
-        trace( "    ok!" );
-
-        gw->state = GAME_STATE_PLAYING;
-        trace( "    ball in hand -> playing" );
-
-    } else {
+    if ( isFault( gw ) ) {
+        trace( "    fault again - ball in hand continues" );
         gw->state = GAME_STATE_BALL_IN_HAND;
-        trace( "    playing -> ball in hand" );
+        return;
     }
+
+    if ( pocketedBall8( gw ) ) {
+
+        if ( canTouchBall8( gw ) ) {
+            trace( "    ball 8 pocketed legally - player wins!" );
+            gw->winnerCueStick = gw->lastCueStick;
+            gw->state = GAME_STATE_GAME_OVER;
+            return;
+        } else {
+            trace( "    ball 8 pocketed prematurely - opponent wins!" );
+            if ( gw->lastCueStick == &gw->cueStickP1 ) {
+                gw->winnerCueStick = &gw->cueStickP2;
+            } else {
+                gw->winnerCueStick = &gw->cueStickP1;
+            }
+            gw->state = GAME_STATE_GAME_OVER;
+            return;
+        }
+    }
+
+    int correctBalls = countCorrectPocketedBalls( gw );
+
+    if ( correctBalls > 0 && !pocketedWrongBalls( gw ) ) {
+        gw->currentCueStick = gw->lastCueStick;
+        trace( "    pocketed correct balls - continues playing" );
+    }
+
+    gw->state = GAME_STATE_PLAYING;
+    trace( "    ball in hand -> playing" );
 
 }
 
 static bool isFault( GameWorld *gw ) {
 
     if ( gw->statistics.cueBallHits == 0 ) {
-        trace( "    fault: don't hit anything" );
+        trace( "    fault: didn't hit anything" );
+        return true;
+    }
+
+    if ( gw->statistics.cueBallPocketed ) {
+        trace( "    fault: cue ball pocketed" );
         return true;
     }
 
     if ( gw->lastCueStick->group != BALL_GROUP_UNDEFINED ) {
-        if ( ( gw->statistics.cueBallFirstHitNumber < 8 && gw->lastCueStick->group == BALL_GROUP_STRIPED ) ||
-             ( gw->statistics.cueBallFirstHitNumber > 8 && gw->lastCueStick->group == BALL_GROUP_PLAIN ) ) {
-            trace( "    fault: wrong group" );
-            return true;
+
+        // Se pode tocar na bola 8, permite
+        if ( canTouchBall8( gw ) && gw->statistics.cueBallFirstHitNumber == 8 ) {
+            // ok to touch ball 8
+        } else if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
+            if ( gw->statistics.cueBallFirstHitNumber >= 8 ) {
+                trace( "    fault: hit wrong group first (expected plain)" );
+                return true;
+            }
+        } else if ( gw->lastCueStick->group == BALL_GROUP_STRIPED ) {
+            if ( gw->statistics.cueBallFirstHitNumber <= 8 ) {
+                trace( "    fault: hit wrong group first (expected striped)" );
+                return true;
+            }
         }
     }
 
@@ -195,6 +271,95 @@ static bool isFault( GameWorld *gw ) {
     }
 
     return false;
+
+}
+
+static bool canTouchBall8( GameWorld *gw ) {
+
+    int correctBallsCount = 0;
+
+    if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
+        for ( int i = 0; i < gw->lastCueStick->pocketedCount; i++ ) {
+            if ( gw->lastCueStick->pocketedBalls[i] < 8 ) {
+                correctBallsCount++;
+            }
+        }
+    } else if ( gw->lastCueStick->group == BALL_GROUP_STRIPED ) {
+        for ( int i = 0; i < gw->lastCueStick->pocketedCount; i++ ) {
+            if ( gw->lastCueStick->pocketedBalls[i] > 8 ) {
+                correctBallsCount++;
+            }
+        }
+    }
+
+    return correctBallsCount == 7;
+
+}
+
+static bool pocketedBall8( GameWorld *gw ) {
+    for ( int i = 0; i < gw->statistics.pocketedCount; i++ ) {
+        if ( gw->statistics.pocketedBalls[i] == 8 ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool pocketedWrongBalls( GameWorld *gw ) {
+
+    if ( gw->lastCueStick->group == BALL_GROUP_UNDEFINED ) {
+        return false;
+    }
+
+    for ( int i = 0; i < gw->statistics.pocketedCount; i++ ) {
+
+        int ballNumber = gw->statistics.pocketedBalls[i];
+
+        if ( ballNumber == 8 ) {
+            continue;
+        }
+
+        if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
+            if ( ballNumber > 8 ) {
+                return true;
+            }
+        } else if ( gw->lastCueStick->group == BALL_GROUP_STRIPED ) {
+            if ( ballNumber < 8 ) {
+                return true;
+            }
+        }
+
+    }
+
+    return false;
+
+}
+
+static int countCorrectPocketedBalls( GameWorld *gw ) {
+
+    if ( gw->lastCueStick->group == BALL_GROUP_UNDEFINED ) {
+        return gw->statistics.pocketedCount;
+    }
+
+    int count = 0;
+
+    for ( int i = 0; i < gw->statistics.pocketedCount; i++ ) {
+
+        int ballNumber = gw->statistics.pocketedBalls[i];
+
+        if ( ballNumber == 8 ) {
+            continue;
+        }
+
+        if ( gw->lastCueStick->group == BALL_GROUP_PLAIN && ballNumber < 8 ) {
+            count++;
+        } else if ( gw->lastCueStick->group == BALL_GROUP_STRIPED && ballNumber > 8 ) {
+            count++;
+        }
+
+    }
+
+    return count;
 
 }
 
@@ -562,26 +727,4 @@ static void resetStatistics( GameWorld *gw ) {
 void resetCueBallPosition( GameWorld *gw ) {
     gw->cueBall->center = (Vector2) { gw->boundarie.x + gw->boundarie.width / 4, GetScreenHeight() / 2 };
     gw->cueBall->pocketed = false;
-}
-
-static bool canTouchBall8( GameWorld *gw ) {
-
-    int c = 0;
-
-    if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
-        for ( int i = 0; i < gw->pocketedCount; i++ ) {
-            if ( gw->pocketedBalls[i] < 8 ) {
-                c++;
-            }
-        }
-    } else if ( gw->lastCueStick->group == BALL_GROUP_STRIPED ) {
-        for ( int i = 0; i < gw->pocketedCount; i++ ) {
-            if ( gw->pocketedBalls[i] > 8 ) {
-                c++;
-            }
-        }
-    }
-
-    return c == 7;
-
 }

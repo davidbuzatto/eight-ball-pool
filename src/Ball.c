@@ -143,6 +143,7 @@ void resolveCollisionBallBall( Ball *b1, Ball *b2 ) {
 
 // Verifica colisão círculo vs segmento de linha
 CollisionResult ballSegmentCollision( Ball *b, Vector2 segStart, Vector2 segEnd ) {
+    
     CollisionResult result = { 0 };
 
     Vector2 movement = Vector2Subtract( b->center, b->prevPos );
