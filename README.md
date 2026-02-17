@@ -7,33 +7,32 @@ A realistic 8 Ball Pool simulation game developed in C using the Raylib library.
 ## 🎮 Features
 
 - **Realistic Physics Engine**
-  - Ball-to-ball collision with momentum transfer
-  - Ball-to-cushion collision with proper reflection
-  - Friction and elasticity simulation
-  - Spin mechanics (top, back, and side spin)
-  - Continuous collision detection to prevent tunneling
+  - Ball-to-ball collision with momentum transfer;
+  - Ball-to-cushion collision with proper reflection;
+  - Friction and elasticity simulation;
+  - Spin mechanics (top, back, and side spin);
+  - Continuous collision detection to prevent tunneling.
 
 - **Official 8 Ball Pool Rules**
-  - Breaking validation
-  - Open table mechanics
-  - Group assignment (solids vs. stripes)
-  - Ball in hand on fouls
-  - Legal 8-ball pocketing conditions
-  - Win/loss detection
+  - Breaking validation;
+  - Open table mechanics;
+  - Group assignment (solids vs. stripes);
+  - Ball in hand on fouls;
+  - Legal 8-ball pocketing conditions;
+  - Win/loss detection.
 
 - **Intelligent Trajectory Prediction**
-  - Visual cue ball path
-  - Impact point indication
-  - Target ball trajectory preview
-  - Ball number identification
+  - Visual cue ball path;
+  - Impact point indication;
+  - Target ball trajectory preview.
 
 - **Professional Interface**
-  - Real-time power adjustment
-  - Angle indicator
-  - Hit point control (spin adjustment)
-  - Score tracking
-  - Game state display
-  - Background music with toggle
+  - Real-time power adjustment;
+  - Angle indicator;
+  - Hit point control (spin adjustment);
+  - Score tracking;
+  - Game state display;
+  - Background music with toggle.
 
 ![Open Table](screenshots/screenshot002.png)
 

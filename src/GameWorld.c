@@ -287,7 +287,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                             } else {
                                 gw->cueStickP2.pocketedBalls[gw->cueStickP2.pocketedCount++] = b->number;
                             }
-                        } else if ( gw->currentCueStick->group == BALL_GROUP_PLAIN ) {
+                        } else if ( gw->currentCueStick->group == BALL_GROUP_SOLID ) {
                             if ( gw->currentCueStick == &gw->cueStickP1 ) {
                                 if ( b->number < 8 ) {
                                     gw->cueStickP1.pocketedBalls[gw->cueStickP1.pocketedCount++] = b->number;

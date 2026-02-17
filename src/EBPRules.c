@@ -118,22 +118,22 @@ static void applyRulesOpenTable( GameWorld *gw ) {
         }
 
         if ( gw->statistics.cueBallFirstHitNumber < 8 ) {
-            gw->lastCueStick->group = BALL_GROUP_PLAIN;
+            gw->lastCueStick->group = BALL_GROUP_SOLID;
         } else if ( gw->statistics.cueBallFirstHitNumber > 8 ) {
             gw->lastCueStick->group = BALL_GROUP_STRIPED;
         }
 
         if ( gw->lastCueStick == &gw->cueStickP1 ) {
-            if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
+            if ( gw->lastCueStick->group == BALL_GROUP_SOLID ) {
                 gw->cueStickP2.group = BALL_GROUP_STRIPED;
             } else {
-                gw->cueStickP2.group = BALL_GROUP_PLAIN;
+                gw->cueStickP2.group = BALL_GROUP_SOLID;
             }
         } else {
-            if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
+            if ( gw->lastCueStick->group == BALL_GROUP_SOLID ) {
                 gw->cueStickP1.group = BALL_GROUP_STRIPED;
             } else {
-                gw->cueStickP1.group = BALL_GROUP_PLAIN;
+                gw->cueStickP1.group = BALL_GROUP_SOLID;
             }
         }
 
@@ -252,7 +252,7 @@ static bool isFault( GameWorld *gw ) {
         // Se pode tocar na bola 8, permite
         if ( canTouchBall8( gw ) && gw->statistics.cueBallFirstHitNumber == 8 ) {
             // ok to touch ball 8
-        } else if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
+        } else if ( gw->lastCueStick->group == BALL_GROUP_SOLID ) {
             if ( gw->statistics.cueBallFirstHitNumber >= 8 ) {
                 trace( "    fault: hit wrong group first (expected plain)" );
                 return true;
@@ -278,7 +278,7 @@ static bool canTouchBall8( GameWorld *gw ) {
 
     int correctBallsCount = 0;
 
-    if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
+    if ( gw->lastCueStick->group == BALL_GROUP_SOLID ) {
         for ( int i = 0; i < gw->lastCueStick->pocketedCount; i++ ) {
             if ( gw->lastCueStick->pocketedBalls[i] < 8 ) {
                 correctBallsCount++;
@@ -319,7 +319,7 @@ static bool pocketedWrongBalls( GameWorld *gw ) {
             continue;
         }
 
-        if ( gw->lastCueStick->group == BALL_GROUP_PLAIN ) {
+        if ( gw->lastCueStick->group == BALL_GROUP_SOLID ) {
             if ( ballNumber > 8 ) {
                 return true;
             }
@@ -351,7 +351,7 @@ static int countCorrectPocketedBalls( GameWorld *gw ) {
             continue;
         }
 
-        if ( gw->lastCueStick->group == BALL_GROUP_PLAIN && ballNumber < 8 ) {
+        if ( gw->lastCueStick->group == BALL_GROUP_SOLID && ballNumber < 8 ) {
             count++;
         } else if ( gw->lastCueStick->group == BALL_GROUP_STRIPED && ballNumber > 8 ) {
             count++;

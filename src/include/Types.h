@@ -36,7 +36,7 @@ typedef enum CueStickState {
 
 typedef enum BallGroup {
     BALL_GROUP_UNDEFINED,
-    BALL_GROUP_PLAIN,
+    BALL_GROUP_SOLID,
     BALL_GROUP_STRIPED
 } BallGroup;
 
