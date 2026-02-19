@@ -62,9 +62,16 @@ static void playBallCushionHitSound( void );
  * @brief Creates a dinamically allocated GameWorld struct instance.
  */
 GameWorld* createGameWorld( void ) {
+
     GameWorld *gw = (GameWorld*) malloc( sizeof( GameWorld ) );
+    
     setupEBP( gw );
+    if ( BG_MUSIC_ENABLED ) {
+        PlayMusicStream( rm.backgroundMusic );
+    }
+
     return gw;
+
 }
 
 /**
@@ -92,15 +99,14 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     }
 
     if ( IsKeyPressed( KEY_R ) ) {
-        StopMusicStream( rm.backgroundMusic );
         setupEBP( gw );
         return;
     }
 
     if ( IsKeyPressed( KEY_M ) ) {
+        StopMusicStream( rm.backgroundMusic );
         bgMusicEnabled = !bgMusicEnabled;
         if ( bgMusicEnabled ) {
-            StopMusicStream( rm.backgroundMusic );
             PlayMusicStream( rm.backgroundMusic );
         }
     }

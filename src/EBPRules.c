@@ -589,10 +589,6 @@ void setupEBP( GameWorld *gw ) {
 
     gw->applyRules = false;
 
-    if ( BG_MUSIC_ENABLED ) {
-        PlayMusicStream( rm.backgroundMusic );
-    }
-
 }
 
 static void shuffleColorsAndNumbers( Color *colors, int *numbers, int size ) {
