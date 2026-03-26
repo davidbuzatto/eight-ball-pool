@@ -90,12 +90,6 @@ void drawBall( Ball *b ) {
 
 void resolveCollisionBallBall( Ball *b1, Ball *b2 ) {
 
-    // vector between centers
-    Vector2 d = {
-        b2->center.x - b1->center.x,
-        b2->center.y - b1->center.y
-    };
-
     float distance = Vector2Distance( b1->center, b2->center );
     float minDistance = b1->radius + b2->radius;
 
@@ -104,13 +98,40 @@ void resolveCollisionBallBall( Ball *b1, Ball *b2 ) {
         return;
     }
 
-    // normalizing
-    Vector2 norm = {
-        d.x / distance,
-        d.y / distance
-    };
+    // Use swept detection to find the contact normal at the actual first-touch point.
+    // CheckCollisionCircles fires after the balls have already overlapped (discrete step),
+    // so the current-position normal is off for cut shots. We solve the quadratic over
+    // the frame movement to recover the correct contact direction.
+    Vector2 move1 = Vector2Subtract( b1->center, b1->prevPos );
+    Vector2 move2 = Vector2Subtract( b2->center, b2->prevPos );
+    Vector2 relMove = Vector2Subtract( move1, move2 );
+    Vector2 d0 = Vector2Subtract( b1->prevPos, b2->prevPos );
 
-    // important: separate the balls
+    float a = Vector2DotProduct( relMove, relMove );
+    float bCoef = 2.0f * Vector2DotProduct( d0, relMove );
+    float c = Vector2DotProduct( d0, d0 ) - minDistance * minDistance;
+    float discriminant = bCoef * bCoef - 4.0f * a * c;
+
+    Vector2 norm;
+
+    if ( discriminant >= 0.0f && a > 0.0001f ) {
+        float t = ( -bCoef - sqrtf( discriminant ) ) / ( 2.0f * a );
+        t = fmaxf( 0.0f, fminf( 1.0f, t ) );
+        Vector2 b1AtT = Vector2Add( b1->prevPos, Vector2Scale( move1, t ) );
+        Vector2 b2AtT = Vector2Add( b2->prevPos, Vector2Scale( move2, t ) );
+        float distAtT = Vector2Distance( b1AtT, b2AtT );
+        if ( distAtT > 0.001f ) {
+            norm = Vector2Normalize( Vector2Subtract( b2AtT, b1AtT ) );
+        } else {
+            // balls were already overlapping last frame; fall back to current positions
+            norm = Vector2Normalize( Vector2Subtract( b2->center, b1->center ) );
+        }
+    } else {
+        // no relative movement or no solution; fall back to current positions
+        norm = Vector2Normalize( Vector2Subtract( b2->center, b1->center ) );
+    }
+
+    // separate the balls
     float overlap = minDistance - distance;
     float separation = overlap / 2.0f;
 
