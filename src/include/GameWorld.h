@@ -12,7 +12,7 @@
 /**
  * @brief Creates a dinamically allocated GameWorld struct instance.
  */
-GameWorld* createGameWorld( void );
+GameWorld *createGameWorld( void );
 
 /**
  * @brief Destroys a GameWindow object and its dependecies.
