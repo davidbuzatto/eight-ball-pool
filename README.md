@@ -2,6 +2,8 @@
 
 A realistic 8 Ball Pool simulation game developed in C using the Raylib library. Features accurate physics, official game rules, and an intuitive interface.
 
+You can try it here: https://davidbuzatto.github.io/eight-ball-pool/
+
 ![Breaking Phase](screenshots/screenshot001.png)
 
 ## 🎮 Features
